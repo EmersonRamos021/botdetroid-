@@ -5,11 +5,17 @@ const config = require('./config');
 const setupAtendimento = require('./commands/setup-atendimento');
 const setupDenuncias = require('./commands/setup-denuncias');
 const configCommand = require('./commands/config');
+const limparCommand = require('./commands/limpar');
+const trancarCommand = require('./commands/trancar');
+const destrancarCommand = require('./commands/destrancar');
 
 const commands = [
     setupAtendimento.data.toJSON(),
     setupDenuncias.data.toJSON(),
     configCommand.data.toJSON(),
+    limparCommand.data.toJSON(),
+    trancarCommand.data.toJSON(),
+    destrancarCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

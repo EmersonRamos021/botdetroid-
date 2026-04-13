@@ -1,5 +1,5 @@
 const { handleAtendimentoSelect, handleAtendimentoModal } = require('../handlers/atendimento');
-const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal } = require('../handlers/denuncias');
+const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal, handleAceitarNegar, handleAceitarNegarModal } = require('../handlers/denuncias');
 const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent } = require('../handlers/ticket');
 const { handleConfigButton, handleConfigSelect } = require('../handlers/config');
 
@@ -60,9 +60,15 @@ module.exports = async (client, interaction) => {
                 return;
             }
 
-            // Botões de denúncias
+            // Botões de denúncias (painel)
             if (['btn_denuncia', 'btn_revisao', 'btn_consultar'].includes(interaction.customId)) {
                 await handleDenunciaButton(interaction);
+                return;
+            }
+
+            // Botões de aceitar/negar denúncia (staff)
+            if (interaction.customId.startsWith('btn_aceitar_') || interaction.customId.startsWith('btn_negar_')) {
+                await handleAceitarNegar(interaction);
                 return;
             }
 
@@ -137,6 +143,12 @@ module.exports = async (client, interaction) => {
 
             if (interaction.customId === 'modal_consultar') {
                 await handleConsultaModal(interaction);
+                return;
+            }
+
+            // Modais de aceitar/negar denúncia (staff)
+            if (interaction.customId.startsWith('modal_aceitar_') || interaction.customId.startsWith('modal_negar_')) {
+                await handleAceitarNegarModal(interaction);
                 return;
             }
 

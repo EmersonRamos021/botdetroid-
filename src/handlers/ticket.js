@@ -265,11 +265,10 @@ async function handleConfirmClose(interaction, client) {
                     );
                     dmPayload.components = [row];
                 } else {
-                    // Fallback
-                    const dmTranscriptFile = new AttachmentBuilder(
-                        await generateTranscript(channel, ticketOwner, ticketType),
-                        { name: `transcript-${channel.name}.html` }
-                    );
+                    // Fallback: reutiliza o buffer já gerado
+                    const dmTranscriptFile = new AttachmentBuilder(transcriptBuffer, {
+                        name: `transcript-${channel.name}.html`,
+                    });
                     dmPayload.files = [dmTranscriptFile];
                 }
 

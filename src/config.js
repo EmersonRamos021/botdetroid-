@@ -21,6 +21,12 @@ module.exports = {
     get staffRoleId() {
         return getSetting('staffRoleId') || process.env.STAFF_ROLE_ID || null;
     },
+    get denunciasChannelId() {
+        return getSetting('denunciasChannelId') || null;
+    },
+    get linkFilterEnabled() {
+        return getSetting('linkFilterEnabled') === 'true';
+    },
 
     // Cores do tema Detroit Roleplay (vermelho/preto)
     colors: {

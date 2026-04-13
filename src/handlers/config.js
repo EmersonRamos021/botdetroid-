@@ -23,6 +23,8 @@ function buildConfigPanel(guild) {
     const logConfigured = settings.logChannelId || process.env.LOG_CHANNEL_ID;
     const staffConfigured = settings.staffRoleId || process.env.STAFF_ROLE_ID;
     const permanentConfigured = settings.permanentCategoryId;
+    const denunciasConfigured = settings.denunciasChannelId;
+    const linkFilterEnabled = settings.linkFilterEnabled === 'true';
 
     // Verificar nomes dos canais/cargos do servidor
     let categoryName = '`Não configurado`';
@@ -30,6 +32,7 @@ function buildConfigPanel(guild) {
     let staffName = '`Não configurado`';
     let guildName = '`Não configurado`';
     let permanentName = '`Não configurado`';
+    let denunciasName = '`Não configurado`';
 
     if (guild) {
         if (guildConfigured) {
@@ -51,11 +54,15 @@ function buildConfigPanel(guild) {
             const ch = guild.channels.cache.get(permanentConfigured);
             permanentName = ch ? `<#${ch.id}> (\`${ch.name}\`)` : `\`ID: ${permanentConfigured}\``;
         }
+        if (denunciasConfigured) {
+            const ch = guild.channels.cache.get(denunciasConfigured);
+            denunciasName = ch ? `<#${ch.id}>` : `\`ID: ${denunciasConfigured}\``;
+        }
     }
 
     // Contar configurações prontas
-    const configured = [guildConfigured, categoryConfigured, logConfigured, staffConfigured, permanentConfigured].filter(Boolean).length;
-    const total = 5;
+    const configured = [guildConfigured, categoryConfigured, logConfigured, staffConfigured, permanentConfigured, denunciasConfigured].filter(Boolean).length;
+    const total = 6;
     const allConfigured = configured === total;
 
     // Barra de progresso visual
@@ -112,6 +119,16 @@ function buildConfigPanel(guild) {
                 inline: false,
             },
             {
+                name: `${denunciasConfigured ? '✅' : '❌'}  📢 Canal de Denúncias`,
+                value: denunciasName,
+                inline: false,
+            },
+            {
+                name: `${linkFilterEnabled ? '✅' : '❌'}  🔗 Filtro de Links`,
+                value: linkFilterEnabled ? '`Ativado` — Links de outros servidores serão bloqueados' : '`Desativado`',
+                inline: false,
+            },
+            {
                 name: '\u200b',
                 value: `${statusEmoji} **Status:** ${statusText}`,
                 inline: false,
@@ -152,6 +169,11 @@ function buildConfigPanel(guild) {
             .setEmoji('📌')
             .setStyle(permanentConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
         new ButtonBuilder()
+            .setCustomId('cfg_denuncias')
+            .setLabel('Canal Denúncias')
+            .setEmoji('📢')
+            .setStyle(denunciasConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
             .setCustomId('cfg_reset')
             .setLabel('Resetar Tudo')
             .setEmoji('🗑️')
@@ -163,7 +185,16 @@ function buildConfigPanel(guild) {
             .setStyle(ButtonStyle.Secondary),
     );
 
-    return { embed, components: [row1, row2] };
+    // Terceira row: toggles
+    const row3 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('cfg_linkfilter')
+            .setLabel(linkFilterEnabled ? 'Desativar Filtro Links' : 'Ativar Filtro Links')
+            .setEmoji('🔗')
+            .setStyle(linkFilterEnabled ? ButtonStyle.Success : ButtonStyle.Secondary),
+    );
+
+    return { embed, components: [row1, row2, row3] };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -316,6 +347,40 @@ async function handleConfigButton(interaction) {
         return;
     }
 
+    // ── Canal de Denúncias → mostrar channel select ──
+    if (customId === 'cfg_denuncias') {
+        const selectMenu = new ChannelSelectMenuBuilder()
+            .setCustomId('cfg_select_denuncias')
+            .setPlaceholder('📢 Selecione o canal de denúncias')
+            .setChannelTypes(ChannelType.GuildText)
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('📢 Selecionar Canal de Denúncias')
+            .setDescription(
+                'Selecione o **canal de texto** onde as denúncias e revisões serão enviadas para a staff analisar.\n\n' +
+                '> 💡 Dica: Crie um canal como `#denúncias` visível apenas para a staff.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
     // ── Voltar ao painel principal ──
     if (customId === 'cfg_back') {
         const { embed, components } = buildConfigPanel(interaction.guild);
@@ -360,6 +425,23 @@ async function handleConfigButton(interaction) {
         await removeSetting('logChannelId');
         await removeSetting('staffRoleId');
         await removeSetting('permanentCategoryId');
+        await removeSetting('denunciasChannelId');
+        await removeSetting('linkFilterEnabled');
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+
+    // ── Toggle Filtro de Links ──
+    if (customId === 'cfg_linkfilter') {
+        const current = getSetting('linkFilterEnabled') === 'true';
+        if (current) {
+            await removeSetting('linkFilterEnabled');
+        } else {
+            await saveSetting('linkFilterEnabled', 'true');
+        }
 
         const { embed, components } = buildConfigPanel(interaction.guild);
         await interaction.update({ embeds: [embed], components });
@@ -423,6 +505,19 @@ async function handleConfigSelect(interaction) {
     if (customId === 'cfg_select_permanent') {
         const channelId = interaction.values[0];
         await saveSetting('permanentCategoryId', channelId);
+
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    if (customId === 'cfg_select_denuncias') {
+        const channelId = interaction.values[0];
+        await saveSetting('denunciasChannelId', channelId);
 
         if (!getSetting('guildId')) {
             await saveSetting('guildId', interaction.guild.id);

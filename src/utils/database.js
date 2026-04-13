@@ -41,7 +41,7 @@ async function initDatabase() {
         )
     `);
 
-    // Tabela de contadores (tickets, denúncias, revisões)
+    // Tabela de contadores (tickets)
     await db.execute(`
         CREATE TABLE IF NOT EXISTS counters (
             name VARCHAR(50) PRIMARY KEY,
@@ -54,7 +54,7 @@ async function initDatabase() {
     await db.execute(`INSERT IGNORE INTO counters (name, count) VALUES ('denuncia', 0)`);
     await db.execute(`INSERT IGNORE INTO counters (name, count) VALUES ('revisao', 0)`);
 
-    // Tabela de relatórios (denúncias e revisões)
+    // Tabela de relatórios (casos unificados — denúncia + revisão no mesmo registro)
     await db.execute(`
         CREATE TABLE IF NOT EXISTS reports (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,11 +69,56 @@ async function initDatabase() {
             link_provas VARCHAR(500) DEFAULT NULL,
             status ENUM('pendente', 'em_analise', 'aprovada', 'negada', 'concluida') DEFAULT 'pendente',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_by VARCHAR(30) DEFAULT NULL,
+            resolved_tag VARCHAR(100) DEFAULT NULL,
+            staff_reason TEXT DEFAULT NULL,
+            resolved_at TIMESTAMP NULL DEFAULT NULL,
+            message_id VARCHAR(30) DEFAULT NULL,
+            revisao_user_id VARCHAR(30) DEFAULT NULL,
+            revisao_user_tag VARCHAR(100) DEFAULT NULL,
+            revisao_motivo TEXT DEFAULT NULL,
+            revisao_link_provas VARCHAR(500) DEFAULT NULL,
+            revisao_created_at TIMESTAMP NULL DEFAULT NULL,
+            revisao_status ENUM('pendente', 'em_analise', 'aprovada', 'negada') DEFAULT NULL,
+            revisao_resolved_by VARCHAR(30) DEFAULT NULL,
+            revisao_resolved_tag VARCHAR(100) DEFAULT NULL,
+            revisao_staff_reason TEXT DEFAULT NULL,
+            revisao_resolved_at TIMESTAMP NULL DEFAULT NULL,
+            revisao_message_id VARCHAR(30) DEFAULT NULL,
             INDEX idx_code (code),
             INDEX idx_type (type),
             INDEX idx_status (status)
         )
     `);
+
+    // Migration: adicionar colunas novas (caso a tabela já exista sem elas)
+    const newColumns = [
+        { name: 'resolved_by', definition: 'VARCHAR(30) DEFAULT NULL' },
+        { name: 'resolved_tag', definition: 'VARCHAR(100) DEFAULT NULL' },
+        { name: 'staff_reason', definition: 'TEXT DEFAULT NULL' },
+        { name: 'resolved_at', definition: 'TIMESTAMP NULL DEFAULT NULL' },
+        { name: 'message_id', definition: 'VARCHAR(30) DEFAULT NULL' },
+        { name: 'revisao_user_id', definition: 'VARCHAR(30) DEFAULT NULL' },
+        { name: 'revisao_user_tag', definition: 'VARCHAR(100) DEFAULT NULL' },
+        { name: 'revisao_motivo', definition: 'TEXT DEFAULT NULL' },
+        { name: 'revisao_link_provas', definition: 'VARCHAR(500) DEFAULT NULL' },
+        { name: 'revisao_created_at', definition: 'TIMESTAMP NULL DEFAULT NULL' },
+        { name: 'revisao_status', definition: "ENUM('pendente', 'em_analise', 'aprovada', 'negada') DEFAULT NULL" },
+        { name: 'revisao_resolved_by', definition: 'VARCHAR(30) DEFAULT NULL' },
+        { name: 'revisao_resolved_tag', definition: 'VARCHAR(100) DEFAULT NULL' },
+        { name: 'revisao_staff_reason', definition: 'TEXT DEFAULT NULL' },
+        { name: 'revisao_resolved_at', definition: 'TIMESTAMP NULL DEFAULT NULL' },
+        { name: 'revisao_message_id', definition: 'VARCHAR(30) DEFAULT NULL' },
+    ];
+
+    for (const col of newColumns) {
+        try {
+            await db.execute(`ALTER TABLE reports ADD COLUMN ${col.name} ${col.definition}`);
+        } catch (e) {
+            // Coluna já existe — ignora silenciosamente
+            if (e.code !== 'ER_DUP_FIELDNAME') throw e;
+        }
+    }
 
     console.log('📦 Tabelas do banco de dados verificadas/criadas com sucesso!');
 }

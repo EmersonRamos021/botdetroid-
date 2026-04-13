@@ -1,9 +1,25 @@
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const config = require('./config');
-const { initDatabase } = require('./utils/database');
+const { initDatabase, getPool } = require('./utils/database');
 const { loadSettingsCache } = require('./utils/settings');
 const readyEvent = require('./events/ready');
 const interactionCreateEvent = require('./events/interactionCreate');
+const messageCreateEvent = require('./events/messageCreate');
+
+// ═══════════════════════════════════════
+// VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
+// ═══════════════════════════════════════
+const requiredEnvs = ['DISCORD_TOKEN', 'CLIENT_ID', 'DATABASE_URL'];
+const missingEnvs = requiredEnvs.filter((key) => !process.env[key]);
+
+if (missingEnvs.length > 0) {
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ Variáveis de ambiente obrigatórias ausentes:');
+    missingEnvs.forEach((key) => console.error(`   • ${key}`));
+    console.error('\nCopie o .env.example para .env e preencha os valores.');
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    process.exit(1);
+}
 
 // Criar cliente do Discord
 const client = new Client({
@@ -22,40 +38,48 @@ client.commands = new Collection();
 const setupAtendimento = require('./commands/setup-atendimento');
 const setupDenuncias = require('./commands/setup-denuncias');
 const configCommand = require('./commands/config');
+const limparCommand = require('./commands/limpar');
+const trancarCommand = require('./commands/trancar');
+const destrancarCommand = require('./commands/destrancar');
 
 client.commands.set(setupAtendimento.data.name, setupAtendimento);
 client.commands.set(setupDenuncias.data.name, setupDenuncias);
 client.commands.set(configCommand.data.name, configCommand);
+client.commands.set(limparCommand.data.name, limparCommand);
+client.commands.set(trancarCommand.data.name, trancarCommand);
+client.commands.set(destrancarCommand.data.name, destrancarCommand);
 
 // Registrar eventos
-client.once('ready', async () => {
-    readyEvent(client);
-
-    // Auto-registrar slash commands em todos os servidores
-    try {
-        const rest = new REST({ version: '10' }).setToken(config.token);
-        const commands = [
-            setupAtendimento.data.toJSON(),
-            setupDenuncias.data.toJSON(),
-            configCommand.data.toJSON(),
-        ];
-
-        for (const guild of client.guilds.cache.values()) {
-            await rest.put(
-                Routes.applicationGuildCommands(config.clientId, guild.id),
-                { body: commands },
-            );
-            console.log(`📌 Comandos registrados em: ${guild.name} (${guild.id})`);
-        }
-    } catch (error) {
-        console.error('❌ Erro ao registrar comandos automaticamente:', error.message);
-        console.error('Execute manualmente: npm run deploy');
-    }
-});
-
+client.once('ready', () => readyEvent(client));
 client.on('interactionCreate', (interaction) => interactionCreateEvent(client, interaction));
+client.on('messageCreate', (message) => messageCreateEvent(client, message));
 
-// Inicialização: Banco de dados → Settings → Login
+// ═══════════════════════════════════════
+// GRACEFUL SHUTDOWN
+// ═══════════════════════════════════════
+async function gracefulShutdown(signal) {
+    console.log(`\n🔄 Sinal ${signal} recebido. Desligando graciosamente...`);
+    try {
+        client.destroy();
+        console.log('✅ Cliente Discord desconectado.');
+    } catch (e) {
+        console.error('⚠️ Erro ao desconectar Discord:', e.message);
+    }
+    try {
+        await getPool().end();
+        console.log('✅ Pool MySQL encerrado.');
+    } catch (e) {
+        console.error('⚠️ Erro ao encerrar pool MySQL:', e.message);
+    }
+    process.exit(0);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// ═══════════════════════════════════════
+// INICIALIZAÇÃO
+// ═══════════════════════════════════════
 (async () => {
     try {
         console.log('🔄 Inicializando banco de dados MySQL...');
@@ -66,6 +90,8 @@ client.on('interactionCreate', (interaction) => interactionCreateEvent(client, i
 
         console.log('🔄 Conectando ao Discord...');
         await client.login(config.token);
+
+        console.log('💡 Para registrar/atualizar slash commands, execute: npm run deploy');
     } catch (error) {
         console.error('❌ Erro fatal na inicialização:', error.message);
         process.exit(1);
