@@ -1,0 +1,16 @@
+{
+  "name": "detroit-roleplay-bot",
+  "version": "1.0.0",
+  "description": "Bot de tickets de suporte para Detroit Roleplay",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "mysql2": "^3.22.0"
+  }
+}

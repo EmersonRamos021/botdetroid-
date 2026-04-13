@@ -1,0 +1,441 @@
+const {
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelSelectMenuBuilder,
+    RoleSelectMenuBuilder,
+    ChannelType,
+    StringSelectMenuBuilder,
+} = require('discord.js');
+const config = require('../config');
+const { saveSetting, getSetting, getSettings, removeSetting } = require('../utils/settings');
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTRUIR PAINEL DE CONFIGURAÇÃO
+// ═══════════════════════════════════════════════════════════════
+function buildConfigPanel(guild) {
+    const settings = getSettings();
+
+    // Status de cada configuração
+    const guildConfigured = settings.guildId || process.env.GUILD_ID;
+    const categoryConfigured = settings.ticketCategoryId || process.env.TICKET_CATEGORY_ID;
+    const logConfigured = settings.logChannelId || process.env.LOG_CHANNEL_ID;
+    const staffConfigured = settings.staffRoleId || process.env.STAFF_ROLE_ID;
+    const permanentConfigured = settings.permanentCategoryId;
+
+    // Verificar nomes dos canais/cargos do servidor
+    let categoryName = '`Não configurado`';
+    let logName = '`Não configurado`';
+    let staffName = '`Não configurado`';
+    let guildName = '`Não configurado`';
+    let permanentName = '`Não configurado`';
+
+    if (guild) {
+        if (guildConfigured) {
+            guildName = `\`${guild.name}\` (\`${guild.id}\`)`;
+        }
+        if (categoryConfigured) {
+            const ch = guild.channels.cache.get(categoryConfigured);
+            categoryName = ch ? `<#${ch.id}> (\`${ch.name}\`)` : `\`ID: ${categoryConfigured}\``;
+        }
+        if (logConfigured) {
+            const ch = guild.channels.cache.get(logConfigured);
+            logName = ch ? `<#${ch.id}>` : `\`ID: ${logConfigured}\``;
+        }
+        if (staffConfigured) {
+            const role = guild.roles.cache.get(staffConfigured);
+            staffName = role ? `<@&${role.id}>` : `\`ID: ${staffConfigured}\``;
+        }
+        if (permanentConfigured) {
+            const ch = guild.channels.cache.get(permanentConfigured);
+            permanentName = ch ? `<#${ch.id}> (\`${ch.name}\`)` : `\`ID: ${permanentConfigured}\``;
+        }
+    }
+
+    // Contar configurações prontas
+    const configured = [guildConfigured, categoryConfigured, logConfigured, staffConfigured, permanentConfigured].filter(Boolean).length;
+    const total = 5;
+    const allConfigured = configured === total;
+
+    // Barra de progresso visual
+    const progressFilled = '🟥'.repeat(configured);
+    const progressEmpty = '⬛'.repeat(total - configured);
+    const progressBar = progressFilled + progressEmpty;
+
+    // Status geral
+    let statusText;
+    let statusEmoji;
+    if (allConfigured) {
+        statusText = 'Todas as configurações estão prontas!';
+        statusEmoji = '✅';
+    } else if (configured > 0) {
+        statusText = `${configured}/${total} configurações definidas.`;
+        statusEmoji = '⚠️';
+    } else {
+        statusText = 'Nenhuma configuração definida.';
+        statusEmoji = '❌';
+    }
+
+    const embed = new EmbedBuilder()
+        .setColor(allConfigured ? config.colors.success : config.colors.primary)
+        .setTitle('⚙️ Painel de Configuração')
+        .setDescription(
+            `Configure o bot **Detroit Roleplay** diretamente aqui.\n` +
+            `Clique nos botões abaixo para definir cada configuração.\n\n` +
+            `${progressBar}  ${configured}/${total}`
+        )
+        .addFields(
+            {
+                name: `${guildConfigured ? '✅' : '❌'}  🏠 Servidor`,
+                value: guildName,
+                inline: false,
+            },
+            {
+                name: `${categoryConfigured ? '✅' : '❌'}  📁 Categoria de Tickets`,
+                value: categoryName,
+                inline: false,
+            },
+            {
+                name: `${logConfigured ? '✅' : '❌'}  📝 Canal de Logs`,
+                value: logName,
+                inline: false,
+            },
+            {
+                name: `${staffConfigured ? '✅' : '❌'}  👥 Cargo Staff`,
+                value: staffName,
+                inline: false,
+            },
+            {
+                name: `${permanentConfigured ? '✅' : '❌'}  📌 Cat. Suporte Permanente`,
+                value: permanentName,
+                inline: false,
+            },
+            {
+                name: '\u200b',
+                value: `${statusEmoji} **Status:** ${statusText}`,
+                inline: false,
+            }
+        )
+        .setFooter({ text: 'Detroit Roleplay • Configurações' })
+        .setTimestamp();
+
+    // Botões de configuração
+    const row1 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('cfg_guild')
+            .setLabel('Servidor')
+            .setEmoji('🏠')
+            .setStyle(guildConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_category')
+            .setLabel('Categoria de Tickets')
+            .setEmoji('📁')
+            .setStyle(categoryConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_log')
+            .setLabel('Canal de Logs')
+            .setEmoji('📝')
+            .setStyle(logConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_staff')
+            .setLabel('Cargo Staff')
+            .setEmoji('👥')
+            .setStyle(staffConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+    );
+
+    // Segunda row com ações extras e o permanente
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('cfg_permanent')
+            .setLabel('Cat. Permanente')
+            .setEmoji('📌')
+            .setStyle(permanentConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_reset')
+            .setLabel('Resetar Tudo')
+            .setEmoji('🗑️')
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_refresh')
+            .setLabel('Atualizar')
+            .setEmoji('🔄')
+            .setStyle(ButtonStyle.Secondary),
+    );
+
+    return { embed, components: [row1, row2] };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HANDLER DE BOTÕES DO CONFIG
+// ═══════════════════════════════════════════════════════════════
+async function handleConfigButton(interaction) {
+    const customId = interaction.customId;
+
+    // ── Auto-detectar servidor ──
+    if (customId === 'cfg_guild') {
+        await saveSetting('guildId', interaction.guild.id);
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    // ── Categoria de tickets → mostrar channel select ──
+    if (customId === 'cfg_category') {
+        const selectMenu = new ChannelSelectMenuBuilder()
+            .setCustomId('cfg_select_category')
+            .setPlaceholder('📁 Selecione a categoria para os tickets')
+            .setChannelTypes(ChannelType.GuildCategory)
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('📁 Selecionar Categoria de Tickets')
+            .setDescription(
+                'Selecione a **categoria de canais** onde os tickets serão criados.\n\n' +
+                '> 💡 Dica: Crie uma categoria chamada "Tickets" ou "Atendimento" no seu servidor antes de selecionar.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
+    // ── Canal de Logs → mostrar channel select ──
+    if (customId === 'cfg_log') {
+        const selectMenu = new ChannelSelectMenuBuilder()
+            .setCustomId('cfg_select_log')
+            .setPlaceholder('📝 Selecione o canal de logs')
+            .setChannelTypes(ChannelType.GuildText)
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('📝 Selecionar Canal de Logs')
+            .setDescription(
+                'Selecione o **canal de texto** onde os logs de tickets serão enviados.\n\n' +
+                '> 💡 Dica: Use um canal privado que apenas a administração tenha acesso, como `#logs-tickets`.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
+    // ── Cargo Staff → mostrar role select ──
+    if (customId === 'cfg_staff') {
+        const selectMenu = new RoleSelectMenuBuilder()
+            .setCustomId('cfg_select_staff')
+            .setPlaceholder('👥 Selecione o cargo da equipe')
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('👥 Selecionar Cargo Staff')
+            .setDescription(
+                'Selecione o **cargo** da equipe que poderá ver e gerenciar os tickets.\n\n' +
+                '> 💡 Dica: Selecione o cargo principal da sua equipe de suporte ou administração.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
+    // ── Cat. Permanente → mostrar channel select ──
+    if (customId === 'cfg_permanent') {
+        const selectMenu = new ChannelSelectMenuBuilder()
+            .setCustomId('cfg_select_permanent')
+            .setPlaceholder('📌 Selecione a categoria p/ tickets permanentes')
+            .setChannelTypes(ChannelType.GuildCategory)
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('📌 Selecionar Categoria Permanente')
+            .setDescription(
+                'Selecione a **categoria de canais** para onde os tickets serão movidos ao clicar em "Tornar Permanente".\n\n' +
+                '> 💡 Dica: Crie uma categoria chamada "Arquivos" ou "Permanentes" no seu servidor antes de selecionar.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
+    // ── Voltar ao painel principal ──
+    if (customId === 'cfg_back') {
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    // ── Resetar tudo ──
+    if (customId === 'cfg_reset') {
+        const confirmEmbed = new EmbedBuilder()
+            .setColor(config.colors.danger)
+            .setTitle('🗑️ Resetar Configurações')
+            .setDescription(
+                '**Tem certeza?** Isso irá remover todas as configurações salvas.\n\n' +
+                'Você precisará configurar tudo novamente.'
+            );
+
+        const confirmRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('cfg_confirm_reset')
+                .setLabel('Sim, Resetar')
+                .setEmoji('🗑️')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('cfg_back')
+                .setLabel('Cancelar')
+                .setEmoji('❌')
+                .setStyle(ButtonStyle.Secondary),
+        );
+
+        await interaction.update({
+            embeds: [confirmEmbed],
+            components: [confirmRow],
+        });
+        return;
+    }
+
+    // ── Confirmar reset ──
+    if (customId === 'cfg_confirm_reset') {
+        await removeSetting('guildId');
+        await removeSetting('ticketCategoryId');
+        await removeSetting('logChannelId');
+        await removeSetting('staffRoleId');
+        await removeSetting('permanentCategoryId');
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    // ── Atualizar painel ──
+    if (customId === 'cfg_refresh') {
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HANDLER DE SELECT MENUS DO CONFIG
+// ═══════════════════════════════════════════════════════════════
+async function handleConfigSelect(interaction) {
+    const customId = interaction.customId;
+
+    if (customId === 'cfg_select_category') {
+        const channelId = interaction.values[0];
+        await saveSetting('ticketCategoryId', channelId);
+
+        // Auto-save guild ID também
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    if (customId === 'cfg_select_log') {
+        const channelId = interaction.values[0];
+        await saveSetting('logChannelId', channelId);
+
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    if (customId === 'cfg_select_staff') {
+        const roleId = interaction.values[0];
+        await saveSetting('staffRoleId', roleId);
+
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    if (customId === 'cfg_select_permanent') {
+        const channelId = interaction.values[0];
+        await saveSetting('permanentCategoryId', channelId);
+
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+}
+
+module.exports = {
+    buildConfigPanel,
+    handleConfigButton,
+    handleConfigSelect,
+};
