@@ -41,6 +41,7 @@ const configCommand = require('./commands/config');
 const limparCommand = require('./commands/limpar');
 const trancarCommand = require('./commands/trancar');
 const destrancarCommand = require('./commands/destrancar');
+const falarCommand = require('./commands/falar');
 
 client.commands.set(setupAtendimento.data.name, setupAtendimento);
 client.commands.set(setupDenuncias.data.name, setupDenuncias);
@@ -48,6 +49,7 @@ client.commands.set(configCommand.data.name, configCommand);
 client.commands.set(limparCommand.data.name, limparCommand);
 client.commands.set(trancarCommand.data.name, trancarCommand);
 client.commands.set(destrancarCommand.data.name, destrancarCommand);
+client.commands.set(falarCommand.data.name, falarCommand);
 
 // Registrar eventos
 client.once('ready', () => readyEvent(client));
