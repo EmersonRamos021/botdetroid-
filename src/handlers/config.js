@@ -208,6 +208,11 @@ function buildConfigPanel(guild) {
             .setLabel(linkFilterEnabled ? 'Desativar Filtro Links' : 'Ativar Filtro Links')
             .setEmoji('🔗')
             .setStyle(linkFilterEnabled ? ButtonStyle.Success : ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId('cfg_badwords_menu')
+            .setLabel('Gerenciar Palavras')
+            .setEmoji('🤬')
+            .setStyle(ButtonStyle.Primary),
     );
 
     return { embed, components: [row1, row2, row3] };
@@ -505,6 +510,74 @@ async function handleConfigButton(interaction) {
         await interaction.update({ embeds: [embed], components });
         return;
     }
+
+    // ── Menu de Palavras Proibidas ──
+    if (customId === 'cfg_badwords_menu') {
+        const words = config.badWords;
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.primary)
+            .setTitle('🤬 Gerenciar Palavras Proibidas')
+            .setDescription(
+                'Abaixo está a lista de palavras **bloqueadas pelo Auto-Mod** no servidor inteiro.\n' +
+                '> Mensagens com essas palavras são deletadas automagicamente!\n> Enviar **4 vezes** num prazo de 3 minutos rende um **Mute (Timeout) de 5 min** ao infrator.\n\n' +
+                `**Palavras em Quarentena:**\n\`${words.join('`, `')}\``
+            )
+            .setFooter({ text: 'Detroit Roleplay • Auto-Moderação' });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('cfg_bw_add')
+                .setLabel('Adicionar Palavra')
+                .setEmoji('➕')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('cfg_bw_rem')
+                .setLabel('Remover Palavra')
+                .setEmoji('➖')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('cfg_back')
+                .setLabel('Voltar ao Painel')
+                .setEmoji('◀️')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.update({ embeds: [infoEmbed], components: [row] });
+        return;
+    }
+
+    // Modal para Adicionar
+    if (customId === 'cfg_bw_add') {
+        const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+        const modal = new ModalBuilder()
+            .setCustomId('modal_bw_add')
+            .setTitle('Adicionar Palavras');
+        const input = new TextInputBuilder()
+            .setCustomId('words_input')
+            .setLabel('Quais palavras? (separe por vírgula)')
+            .setPlaceholder('exemplo, teste, palavrao')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+        await interaction.showModal(modal);
+        return;
+    }
+
+    // Modal para Remover
+    if (customId === 'cfg_bw_rem') {
+        const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+        const modal = new ModalBuilder()
+            .setCustomId('modal_bw_rem')
+            .setTitle('Remover Palavras da Lista');
+        const input = new TextInputBuilder()
+            .setCustomId('words_input')
+            .setLabel('Qual palavra remover? (apenas a palavra)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+        await interaction.showModal(modal);
+        return;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -593,8 +666,68 @@ async function handleConfigSelect(interaction) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// HANDLER DE MODAIS (PALAVRAS BLOQUEADAS)
+// ═══════════════════════════════════════════════════════════════
+async function handleConfigModal(interaction) {
+    const customId = interaction.customId;
+
+    if (customId === 'modal_bw_add' || customId === 'modal_bw_rem') {
+        const input = interaction.fields.getTextInputValue('words_input');
+        // Separamos por vírgula e removemos espaços das pontas
+        const userWords = input.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+        let currentWords = config.badWords;
+
+        if (customId === 'modal_bw_add') {
+            for (const w of userWords) {
+                if (!currentWords.includes(w)) {
+                    currentWords.push(w);
+                }
+            }
+        } else {
+            currentWords = currentWords.filter(w => !userWords.includes(w));
+        }
+
+        // Salva DB as novas strings JSON
+        await saveSetting('badWords_list', JSON.stringify(currentWords));
+
+        // Volta pra tela de gerenciamento mostrando atualizado
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.primary)
+            .setTitle('🤬 Gerenciar Palavras Proibidas')
+            .setDescription(
+                'Abaixo está a lista de palavras **bloqueadas pelo Auto-Mod** no servidor inteiro.\n' +
+                '> Mensagens com essas palavras são deletadas automagicamente!\n> Enviar **4 vezes** num prazo de 3 minutos rende um **Mute (Timeout) de 5 min** ao infrator.\n\n' +
+                `**Palavras em Quarentena:**\n\`${currentWords.join('`, `')}\``
+            )
+            .setFooter({ text: 'Detroit Roleplay • Auto-Moderação' });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('cfg_bw_add')
+                .setLabel('Adicionar Palavra')
+                .setEmoji('➕')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('cfg_bw_rem')
+                .setLabel('Remover Palavra')
+                .setEmoji('➖')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('cfg_back')
+                .setLabel('Voltar ao Painel')
+                .setEmoji('◀️')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.update({ embeds: [infoEmbed], components: [row] });
+        return;
+    }
+}
+
 module.exports = {
     buildConfigPanel,
     handleConfigButton,
     handleConfigSelect,
+    handleConfigModal,
 };

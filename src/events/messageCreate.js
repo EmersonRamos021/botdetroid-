@@ -2,6 +2,7 @@ const { EmbedBuilder, Collection } = require('discord.js');
 const config = require('../config');
 
 const spamTracker = new Collection();
+const badWordTracker = new Collection();
 // Regex para detectar links de convite do Discord
 const INVITE_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
 
@@ -28,10 +29,48 @@ module.exports = async (client, message) => {
         if (encontrouPalavrao) {
             await message.delete().catch(() => {});
             
-            const aviso = await message.channel.send({
-                content: `${message.author} ⚠️ Você utilizou uma palavra proibida ou termo bloqueado. Sua mensagem foi removida.`
-            });
-            setTimeout(() => aviso.delete().catch(() => {}), 6000);
+            const now = Date.now();
+            const userId = message.author.id;
+
+            if (!badWordTracker.has(userId)) {
+                badWordTracker.set(userId, []);
+            }
+
+            const userBW = badWordTracker.get(userId);
+            userBW.push(now);
+
+            // 3 minutos = 180000ms
+            const recentBW = userBW.filter((timestamp) => (now - timestamp) < 180000);
+            badWordTracker.set(userId, recentBW);
+
+            let timeoutApplied = false;
+
+            if (recentBW.length >= 4) {
+                try {
+                    // Mute de 5 minutos (300000ms)
+                    if (message.member && message.member.moderatable) {
+                        await message.member.timeout(300000, "Múltiplas palavras proibidas (Auto-Mod)");
+                        timeoutApplied = true;
+
+                        const aviso = await message.channel.send({
+                            content: `🛑 ${message.author} recebeu um **Mute Automático de 5 minutos** por insistir no uso de palavras bloqueadas.`
+                        });
+                        setTimeout(() => aviso.delete().catch(() => {}), 10000);
+
+                        // Limpa pra não mutar de novo em sequencia
+                        badWordTracker.set(userId, []);
+                    }
+                } catch (e) {
+                    console.error("Erro ao aplicar timeout:", e);
+                }
+            } 
+            
+            if (!timeoutApplied) {
+                const aviso = await message.channel.send({
+                    content: `${message.author} ⚠️ Você utilizou uma palavra proibida. Sua mensagem foi removida.\n> 🔴 *Cuidado: Insistir nisso resultará em Mute.*`
+                });
+                setTimeout(() => aviso.delete().catch(() => {}), 6000);
+            }
 
             if (config.automodLogChannelId) {
                 const logChannel = message.guild.channels.cache.get(config.automodLogChannelId);
@@ -43,6 +82,7 @@ module.exports = async (client, message) => {
                             { name: '👤 Usuário', value: `${message.author} (\`${message.author.id}\`)`, inline: true },
                             { name: '📍 Canal', value: `<#${message.channel.id}>`, inline: true },
                             { name: '💬 Mensagem Original', value: `\`\`\`${message.content.substring(0, 1000)}\`\`\``, inline: false },
+                            { name: '⚠️ Punição', value: timeoutApplied ? '`🚨 Tomou Mute de 5 Mins (Infrator Recorrente)`' : '`Aviso e Deleção (Punição Acumulando)`', inline: false }
                         )
                         .setFooter({ text: 'Auto-Moderação' })
                         .setTimestamp();

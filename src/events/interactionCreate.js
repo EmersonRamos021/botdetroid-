@@ -1,7 +1,7 @@
 const { handleAtendimentoSelect, handleAtendimentoModal } = require('../handlers/atendimento');
 const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal, handleAceitarNegar, handleAceitarNegarModal } = require('../handlers/denuncias');
 const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent } = require('../handlers/ticket');
-const { handleConfigButton, handleConfigSelect } = require('../handlers/config');
+const { handleConfigButton, handleConfigSelect, handleConfigModal } = require('../handlers/config');
 
 module.exports = async (client, interaction) => {
     try {
@@ -161,6 +161,12 @@ module.exports = async (client, interaction) => {
             // Modal de Remover por ID
             if (interaction.customId === 'modal_rem_user_id') {
                 await handleTicketRemUserIdSubmit(interaction);
+                return;
+            }
+
+            // Modal de config de palavras
+            if (interaction.customId.startsWith('modal_bw_')) {
+                await handleConfigModal(interaction);
                 return;
             }
         }

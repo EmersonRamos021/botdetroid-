@@ -37,10 +37,16 @@ module.exports = {
         timeWindowMs: 4000, // 5 mensagens em 4 segundos aciona o anti-flood
     },
     // Palavras bloqueadas padrão (Pode ser atualizado conforme demanda)
-    badWords: [
-        'fdp', 'vtnc', 'filho da puta', 'arrombado', 'vsf', 'vai se fuder', 
-        'desgraça', 'corno', 'puta', 'vagabundo'
-    ],
+    get badWords() {
+        const saved = getSetting('badWords_list');
+        if (saved) {
+            try { return JSON.parse(saved); } catch(e) {}
+        }
+        return [
+            'fdp', 'vtnc', 'filho da puta', 'arrombado', 'vsf', 'vai se fuder', 
+            'desgraça', 'corno', 'puta', 'vagabundo'
+        ];
+    },
 
     // Cores do tema Detroit Roleplay (vermelho/preto)
     colors: {
