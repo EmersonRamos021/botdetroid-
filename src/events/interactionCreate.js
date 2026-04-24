@@ -182,44 +182,60 @@ module.exports = async (client, interaction) => {
 
                 // Capturar campos
                 const titulo = interaction.fields.getTextInputValue('input_titulo');
-                const adicoes = interaction.fields.getTextInputValue('input_adicoes');
                 
-                // Opcionais
+                let adicoes = null;
+                try { adicoes = interaction.fields.getTextInputValue('input_adicoes'); } catch(e){}
+
+                let alteracoes = null;
+                try { alteracoes = interaction.fields.getTextInputValue('input_alteracoes'); } catch(e){}
+                
                 let regras = null;
                 try { regras = interaction.fields.getTextInputValue('input_regras'); } catch(e){}
                 
                 let links = null;
                 try { links = interaction.fields.getTextInputValue('input_links'); } catch(e){}
 
-                // Formatar lista de adições garantindo o estilo markdown
-                const adicoesFormatado = adicoes.split('\n').map(line => {
-                    const l = line.trim();
-                    if (l.startsWith('-')) return l;
-                    if (l.length > 0) return `- ${l}`;
-                    return '';
-                }).filter(Boolean).join('\n');
+                // Função para forçar listas em markdown
+                const formataLista = (texto) => {
+                    if (!texto) return '';
+                    return texto.split('\n').map(line => {
+                        const l = line.trim();
+                        if (l.startsWith('-')) return l;
+                        if (l.length > 0) return `- ${l}`;
+                        return '';
+                    }).filter(Boolean).join('\n');
+                };
 
                 const dataHoje = new Date().toLocaleDateString('pt-BR');
 
-                // Construção do Visual Idêntico ao Solicitado
+                // Construção do Visual
                 const { EmbedBuilder } = require('discord.js');
                 const embed = new EmbedBuilder()
-                    .setColor('#2b2d31') // Cor escura típica do discord para dar aspecto clean
+                    .setColor('#2b2d31') // Fundo transparente moderno
                     .setAuthor({ name: `⚙️ Nova Atualização! - ${dataHoje}` })
                     .setTitle(titulo)
                     .setFooter({ text: `Detroit Roleplay • ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` });
 
-                let descricaoCompleta = `<:1154243504273367112:1154243504273367112> **Adicionado/Alterado:**\n\n${adicoesFormatado}`;
+                let descricaoCompleta = '';
+
+                if (adicoes && adicoes.length > 0) {
+                    descricaoCompleta += `<:1154243504273367112:1154243504273367112> **Novas Adições:**\n\n${formataLista(adicoes)}\n\n`;
+                }
+
+                if (alteracoes && alteracoes.length > 0) {
+                    descricaoCompleta += `<:1154243501278625853:1154243501278625853> **Foram Alterados:**\n\n${formataLista(alteracoes)}\n\n`;
+                }
 
                 if (regras && regras.length > 0) {
-                    descricaoCompleta += `\n\n<:1154243501278625853:1154243501278625853> **Adições/Alterações de Regras:**\n${regras}`;
+                    // Sem os emojis pq os circulos foram designados as alterações/adições (mas pode usar se quiser)
+                    descricaoCompleta += `**Adições/Alterações de Regras:**\n${regras}\n\n`;
                 }
 
                 if (links && links.length > 0) {
-                    descricaoCompleta += `\n\n${links}`;
+                    descricaoCompleta += `${links}`;
                 }
 
-                embed.setDescription(descricaoCompleta);
+                embed.setDescription(descricaoCompleta || '*(Atualização sem detalhes)*');
 
                 const sentMessage = await canal.send({ embeds: [embed] });
                 

@@ -30,15 +30,23 @@ module.exports = {
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
-        // Input 2: Adições/Alterações
+        // Input 2: Adições
         const adicoesInput = new TextInputBuilder()
             .setCustomId('input_adicoes')
-            .setLabel('O que foi adicionado/alterado?')
-            .setPlaceholder('Escreva os itens com ícones ou hífens (-)')
+            .setLabel('O que foi ADICIONADO?')
+            .setPlaceholder('Item novo na cidade...')
             .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true);
+            .setRequired(false);
 
-        // Input 3: Regras Alteradas (Opcional)
+        // Input 3: Alterações
+        const alteracoesInput = new TextInputBuilder()
+            .setCustomId('input_alteracoes')
+            .setLabel('O que foi ALTERADO?')
+            .setPlaceholder('Mudança no sistema X...')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(false);
+
+        // Input 4: Regras Alteradas (Opcional)
         const regrasInput = new TextInputBuilder()
             .setCustomId('input_regras')
             .setLabel('Novas Regras (Opcional)')
@@ -46,18 +54,19 @@ module.exports = {
             .setStyle(TextInputStyle.Paragraph)
             .setRequired(false);
 
-        // Input 4: Links (Opcional)
+        // Input 5: Links (Opcional)
         const linksInput = new TextInputBuilder()
             .setCustomId('input_links')
             .setLabel('Link p/ Redirecionamento (Opcional)')
-            .setPlaceholder('[Documento de Regras - Clique Aqui](URL)')
+            .setPlaceholder('[Documento de Regras](URL)')
             .setStyle(TextInputStyle.Short)
             .setRequired(false);
 
-        // O Modal exige ActionRows separadas para cada Input
+        // O Modal exige ActionRows separadas para cada Input (Máx 5)
         modal.addComponents(
             new ActionRowBuilder().addComponents(tituloInput),
             new ActionRowBuilder().addComponents(adicoesInput),
+            new ActionRowBuilder().addComponents(alteracoesInput),
             new ActionRowBuilder().addComponents(regrasInput),
             new ActionRowBuilder().addComponents(linksInput)
         );
