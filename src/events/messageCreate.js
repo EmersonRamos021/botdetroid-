@@ -1,5 +1,7 @@
-const spamTracker = new Collection();
+const { EmbedBuilder, Collection } = require('discord.js');
+const config = require('../config');
 
+const spamTracker = new Collection();
 // Regex para detectar links de convite do Discord
 const INVITE_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
 
