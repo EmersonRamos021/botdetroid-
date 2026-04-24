@@ -114,12 +114,21 @@ module.exports = async (client, message) => {
         if (recentMessages.length > config.antiFlood.maxMessages) {
             await message.delete().catch(() => {});
             
-            spamTracker.set(userId, []); // Previne spammar alertas seguidos
+            spamTracker.set(userId, []); // Previne sobrecarregar a memória no loop
 
-            const aviso = await message.channel.send({
-                content: `${message.author} 🛑 **Anti-Flood!** Você está enviando mensagens rápido demais. Contenha-se!`
-            });
-            setTimeout(() => aviso.delete().catch(() => {}), 6000);
+            try {
+                if (message.member && message.member.moderatable) {
+                    // 15 minutos em milissegundos
+                    await message.member.timeout(15 * 60 * 1000, "Fez Spam/Flood no chat (Auto-Mod)");
+                    
+                    const aviso = await message.channel.send({
+                        content: `🛑 ${message.author} recebeu um **Mute de 15 minutos** por Floodar/Fazer Spam de mensagens.`
+                    });
+                    setTimeout(() => aviso.delete().catch(() => {}), 10000);
+                }
+            } catch (e) {
+                console.error("Erro ao aplicar timeout (Anti-Flood):", e);
+            }
 
             if (config.automodLogChannelId) {
                 const logChannel = message.guild.channels.cache.get(config.automodLogChannelId);
@@ -130,7 +139,7 @@ module.exports = async (client, message) => {
                         .addFields(
                             { name: '👤 Usuário', value: `${message.author} (\`${message.author.id}\`)`, inline: true },
                             { name: '📍 Canal', value: `<#${message.channel.id}>`, inline: true },
-                            { name: '⚠️ Ação', value: `Flood detectado e as mensagens finais foram apagadas.`, inline: false },
+                            { name: '⚠️ Ação / Punição', value: `\`🚨 Silenciado (Timeout) por 15 Minutos\``, inline: false },
                         )
                         .setFooter({ text: 'Auto-Moderação' })
                         .setTimestamp();
