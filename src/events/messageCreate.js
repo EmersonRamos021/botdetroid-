@@ -1,5 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
-const config = require('../config');
+const spamTracker = new Collection();
 
 // Regex para detectar links de convite do Discord
 const INVITE_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
@@ -8,15 +7,106 @@ module.exports = async (client, message) => {
     // Ignorar bots e DMs
     if (message.author.bot || !message.guild) return;
 
-    // Verificar se o filtro de links está ativado
+    // Staff é isento do filtro (Flood, Filtro de link e Palavras)
+    const isStaff = config.staffRoleId && message.member?.roles.cache.has(config.staffRoleId);
+
+    // ═══════════════════════════════════════
+    // SISTEMA DE PALAVRAS PROIBIDAS
+    // ═══════════════════════════════════════
+    if (!isStaff) {
+        const contentLower = message.content.toLowerCase();
+        
+        // Verifica se qualquer bad word configurada está na string
+        const encontrouPalavrao = config.badWords.some(word => {
+            // Regex de borda limitadora garante que "cor" não accione com "corno"
+            const regex = new RegExp(`\\b${word}\\b`, 'i');
+            return regex.test(contentLower);
+        });
+
+        if (encontrouPalavrao) {
+            await message.delete().catch(() => {});
+            
+            const aviso = await message.channel.send({
+                content: `${message.author} ⚠️ Você utilizou uma palavra proibida ou termo bloqueado. Sua mensagem foi removida.`
+            });
+            setTimeout(() => aviso.delete().catch(() => {}), 6000);
+
+            if (config.automodLogChannelId) {
+                const logChannel = message.guild.channels.cache.get(config.automodLogChannelId);
+                if (logChannel) {
+                    const embed = new EmbedBuilder()
+                        .setColor(config.colors.danger)
+                        .setTitle('🗣️ Palavra Proibida Detectada')
+                        .addFields(
+                            { name: '👤 Usuário', value: `${message.author} (\`${message.author.id}\`)`, inline: true },
+                            { name: '📍 Canal', value: `<#${message.channel.id}>`, inline: true },
+                            { name: '💬 Mensagem Original', value: `\`\`\`${message.content.substring(0, 1000)}\`\`\``, inline: false },
+                        )
+                        .setFooter({ text: 'Auto-Moderação' })
+                        .setTimestamp();
+                    await logChannel.send({ embeds: [embed] }).catch(() => {});
+                }
+            }
+            return;
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // SISTEMA ANTI-FLOOD
+    // ═══════════════════════════════════════
+    if (!isStaff) {
+        const now = Date.now();
+        const userId = message.author.id;
+
+        if (!spamTracker.has(userId)) {
+            spamTracker.set(userId, []);
+        }
+
+        const userMessages = spamTracker.get(userId);
+        userMessages.push(now);
+
+        // Mantém as msgs dentro da janela configurada na config.js (4000ms = 4s)
+        const recentMessages = userMessages.filter((timestamp) => (now - timestamp) < config.antiFlood.timeWindowMs);
+        spamTracker.set(userId, recentMessages);
+
+        if (recentMessages.length > config.antiFlood.maxMessages) {
+            await message.delete().catch(() => {});
+            
+            spamTracker.set(userId, []); // Previne spammar alertas seguidos
+
+            const aviso = await message.channel.send({
+                content: `${message.author} 🛑 **Anti-Flood!** Você está enviando mensagens rápido demais. Contenha-se!`
+            });
+            setTimeout(() => aviso.delete().catch(() => {}), 6000);
+
+            if (config.automodLogChannelId) {
+                const logChannel = message.guild.channels.cache.get(config.automodLogChannelId);
+                if (logChannel) {
+                    const embed = new EmbedBuilder()
+                        .setColor(config.colors.warning)
+                        .setTitle('🛑 Sistema Anti-Flood Ativado')
+                        .addFields(
+                            { name: '👤 Usuário', value: `${message.author} (\`${message.author.id}\`)`, inline: true },
+                            { name: '📍 Canal', value: `<#${message.channel.id}>`, inline: true },
+                            { name: '⚠️ Ação', value: `Flood detectado e as mensagens finais foram apagadas.`, inline: false },
+                        )
+                        .setFooter({ text: 'Auto-Moderação' })
+                        .setTimestamp();
+                    await logChannel.send({ embeds: [embed] }).catch(() => {});
+                }
+            }
+            return;
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // FILTRO DE LINKS
+    // ═══════════════════════════════════════
     if (!config.linkFilterEnabled) return;
 
     // Verificar se a mensagem contém links de convite
     const matches = message.content.match(INVITE_REGEX);
     if (!matches) return;
-
-    // Staff é isento do filtro
-    if (config.staffRoleId && message.member.roles.cache.has(config.staffRoleId)) return;
 
     // Verificar cada convite encontrado
     for (const inviteUrl of matches) {

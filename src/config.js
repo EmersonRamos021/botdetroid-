@@ -24,9 +24,23 @@ module.exports = {
     get denunciasChannelId() {
         return getSetting('denunciasChannelId') || null;
     },
+    get automodLogChannelId() {
+        return getSetting('automodLogChannelId') || process.env.AUTOMOD_LOG_CHANNEL_ID || null;
+    },
     get linkFilterEnabled() {
         return getSetting('linkFilterEnabled') === 'true';
     },
+
+    // ── Auto-Moderação: Regras ──
+    antiFlood: {
+        maxMessages: 5,
+        timeWindowMs: 4000, // 5 mensagens em 4 segundos aciona o anti-flood
+    },
+    // Palavras bloqueadas padrão (Pode ser atualizado conforme demanda)
+    badWords: [
+        'fdp', 'vtnc', 'filho da puta', 'arrombado', 'vsf', 'vai se fuder', 
+        'desgraça', 'corno', 'puta', 'vagabundo'
+    ],
 
     // Cores do tema Detroit Roleplay (vermelho/preto)
     colors: {
