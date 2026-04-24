@@ -209,10 +209,10 @@ module.exports = async (client, interaction) => {
                     .setTitle(titulo)
                     .setFooter({ text: `Detroit Roleplay • ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` });
 
-                let descricaoCompleta = `<:green:1154243504273367112> **Adicionado/Alterado:**\n\n${adicoesFormatado}`;
+                let descricaoCompleta = `<:1154243504273367112:1154243504273367112> **Adicionado/Alterado:**\n\n${adicoesFormatado}`;
 
                 if (regras && regras.length > 0) {
-                    descricaoCompleta += `\n\n**Adições/Alterações de Regras:**\n${regras}`;
+                    descricaoCompleta += `\n\n<:1154243501278625853:1154243501278625853> **Adições/Alterações de Regras:**\n${regras}`;
                 }
 
                 if (links && links.length > 0) {
