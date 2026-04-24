@@ -10,6 +10,7 @@ const trancarCommand = require('./commands/trancar');
 const destrancarCommand = require('./commands/destrancar');
 const falarCommand = require('./commands/falar');
 const enqueteCommand = require('./commands/enquete');
+const atualizacaoCommand = require('./commands/atualizacao');
 
 const commands = [
     setupAtendimento.data.toJSON(),
@@ -20,6 +21,7 @@ const commands = [
     destrancarCommand.data.toJSON(),
     falarCommand.data.toJSON(),
     enqueteCommand.data.toJSON(),
+    atualizacaoCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

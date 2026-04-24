@@ -169,6 +169,66 @@ module.exports = async (client, interaction) => {
                 await handleConfigModal(interaction);
                 return;
             }
+
+            // Modal do comando /atualizacao
+            if (interaction.customId.startsWith('modal_atualizacao_')) {
+                const canalId = interaction.customId.split('_')[2];
+                const canal = interaction.guild.channels.cache.get(canalId);
+                
+                if (!canal) {
+                    await interaction.reply({ content: '❌ Erro: o canal selecionado não foi encontrado.', ephemeral: true });
+                    return;
+                }
+
+                // Capturar campos
+                const titulo = interaction.fields.getTextInputValue('input_titulo');
+                const adicoes = interaction.fields.getTextInputValue('input_adicoes');
+                
+                // Opcionais
+                let regras = null;
+                try { regras = interaction.fields.getTextInputValue('input_regras'); } catch(e){}
+                
+                let links = null;
+                try { links = interaction.fields.getTextInputValue('input_links'); } catch(e){}
+
+                // Formatar lista de adições garantindo o estilo markdown
+                const adicoesFormatado = adicoes.split('\n').map(line => {
+                    const l = line.trim();
+                    if (l.startsWith('-')) return l;
+                    if (l.length > 0) return `- ${l}`;
+                    return '';
+                }).filter(Boolean).join('\n');
+
+                const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+                // Construção do Visual Idêntico ao Solicitado
+                const { EmbedBuilder } = require('discord.js');
+                const embed = new EmbedBuilder()
+                    .setColor('#2b2d31') // Cor escura típica do discord para dar aspecto clean
+                    .setAuthor({ name: `⚙️ Nova Atualização! - ${dataHoje}` })
+                    .setTitle(titulo)
+                    .setFooter({ text: `Detroit Roleplay • ${new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` });
+
+                let descricaoCompleta = `<:green:1154243504273367112> **Adicionado/Alterado:**\n\n${adicoesFormatado}`;
+
+                if (regras && regras.length > 0) {
+                    descricaoCompleta += `\n\n**Adições/Alterações de Regras:**\n${regras}`;
+                }
+
+                if (links && links.length > 0) {
+                    descricaoCompleta += `\n\n${links}`;
+                }
+
+                embed.setDescription(descricaoCompleta);
+
+                const sentMessage = await canal.send({ embeds: [embed] });
+                
+                // Adiciona o Emoji Customizado na mensagem como Reação
+                await sentMessage.react('1082371724579971082').catch(() => {});
+
+                await interaction.reply({ content: '✅ Atualização enviada com sucesso no canal marcado!', ephemeral: true });
+                return;
+            }
         }
 
     } catch (error) {
