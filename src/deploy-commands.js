@@ -9,6 +9,7 @@ const limparCommand = require('./commands/limpar');
 const trancarCommand = require('./commands/trancar');
 const destrancarCommand = require('./commands/destrancar');
 const falarCommand = require('./commands/falar');
+const enqueteCommand = require('./commands/enquete');
 
 const commands = [
     setupAtendimento.data.toJSON(),
@@ -18,6 +19,7 @@ const commands = [
     trancarCommand.data.toJSON(),
     destrancarCommand.data.toJSON(),
     falarCommand.data.toJSON(),
+    enqueteCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
