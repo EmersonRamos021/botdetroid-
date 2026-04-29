@@ -131,6 +131,37 @@ module.exports = async (client, interaction) => {
                 return;
             }
 
+            // Modal do comando /falar
+            if (interaction.customId.startsWith('modal_falar_')) {
+                const id = interaction.customId.replace('modal_falar_', '');
+                const texto = interaction.fields.getTextInputValue('texto_longo');
+                
+                const { anexoCache } = require('../commands/falar.js');
+                const anexoUrl = anexoCache.get(id);
+                
+                const payload = {};
+                if (texto) payload.content = texto;
+                if (anexoUrl) {
+                    payload.files = [anexoUrl];
+                    anexoCache.delete(id);
+                }
+
+                try {
+                    await interaction.channel.send(payload);
+                    await interaction.reply({ 
+                        content: '✅ Sua mensagem formatada foi enviada com sucesso!', 
+                        ephemeral: true 
+                    });
+                } catch (e) {
+                    console.error('Erro no modal_falar:', e);
+                    await interaction.reply({ 
+                        content: '❌ Erro ao enviar mensagem formatada. Verifique as permissões do bot.', 
+                        ephemeral: true 
+                    });
+                }
+                return;
+            }
+
             if (interaction.customId === 'modal_denuncia') {
                 await handleDenunciaModal(interaction);
                 return;
