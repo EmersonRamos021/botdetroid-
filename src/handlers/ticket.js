@@ -20,7 +20,7 @@ const {
     buildLogEmbed,
 } = require('../utils/embeds');
 const { generateTranscript } = require('../utils/transcript');
-const { getNextCount } = require('../utils/database');
+const { getNextCount, getPool } = require('../utils/database');
 
 async function getNextTicketNumber() {
     const num = await getNextCount('ticket');
@@ -209,6 +209,30 @@ async function handleConfirmClose(interaction, client) {
         const transcriptFile = new AttachmentBuilder(transcriptBuffer, {
             name: `transcript-${channel.name}.html`,
         });
+
+        // ============================================
+        // SALVAR NO BANCO DE DADOS (NOVO)
+        // ============================================
+        try {
+            const transcriptHtml = transcriptBuffer.toString('utf-8');
+            const pool = getPool();
+            await pool.execute(
+                `INSERT INTO tickets (channel_name, owner_id, owner_tag, ticket_type, closed_by, transcript_html)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    channel.name,
+                    ticketOwner ? ticketOwner.id : (ownerId || 'desconhecido'),
+                    ticketOwner ? ticketOwner.tag : 'Desconhecido',
+                    ticketType,
+                    interaction.user.tag,
+                    transcriptHtml
+                ]
+            );
+            console.log(`✅ [Tickets] Ticket #${channel.name} salvo no banco de dados com sucesso.`);
+        } catch (dbError) {
+            console.error('❌ Erro ao salvar ticket no banco de dados:', dbError.message);
+        }
+        // ============================================
 
         // Enviar transcrição no canal de logs
         let transcriptUrl = null;
