@@ -24,6 +24,7 @@ function buildConfigPanel(guild) {
     const staffConfigured = settings.staffRoleId || process.env.STAFF_ROLE_ID;
     const permanentConfigured = settings.permanentCategoryId;
     const denunciasConfigured = settings.denunciasChannelId;
+    const autoRoleConfigured = settings.autoRoleId || process.env.AUTO_ROLE_ID;
     const automodLogConfigured = settings.automodLogChannelId || process.env.AUTOMOD_LOG_CHANNEL_ID;
     const linkFilterEnabled = settings.linkFilterEnabled === 'true';
 
@@ -34,6 +35,7 @@ function buildConfigPanel(guild) {
     let guildName = '`Não configurado`';
     let permanentName = '`Não configurado`';
     let denunciasName = '`Não configurado`';
+    let autoRoleName = '`Não configurado`';
     let automodLogName = '`Não configurado`';
 
     if (guild) {
@@ -60,6 +62,10 @@ function buildConfigPanel(guild) {
             const ch = guild.channels.cache.get(denunciasConfigured);
             denunciasName = ch ? `<#${ch.id}>` : `\`ID: ${denunciasConfigured}\``;
         }
+        if (autoRoleConfigured) {
+            const role = guild.roles.cache.get(autoRoleConfigured);
+            autoRoleName = role ? `<@&${role.id}>` : `\`ID: ${autoRoleConfigured}\``;
+        }
         if (automodLogConfigured) {
             const ch = guild.channels.cache.get(automodLogConfigured);
             automodLogName = ch ? `<#${ch.id}>` : `\`ID: ${automodLogConfigured}\``;
@@ -67,8 +73,8 @@ function buildConfigPanel(guild) {
     }
 
     // Contar configurações prontas
-    const configured = [guildConfigured, categoryConfigured, logConfigured, staffConfigured, permanentConfigured, denunciasConfigured, automodLogConfigured].filter(Boolean).length;
-    const total = 7;
+    const configured = [guildConfigured, categoryConfigured, logConfigured, staffConfigured, permanentConfigured, denunciasConfigured, autoRoleConfigured, automodLogConfigured].filter(Boolean).length;
+    const total = 8;
     const allConfigured = configured === total;
 
     // Barra de progresso visual
@@ -130,6 +136,11 @@ function buildConfigPanel(guild) {
                 inline: false,
             },
             {
+                name: `${autoRoleConfigured ? '✅' : '❌'}  ➕ Auto Role (Cargo)`,
+                value: autoRoleName,
+                inline: false,
+            },
+            {
                 name: `${linkFilterEnabled ? '✅' : '❌'}  🔗 Filtro de Links`,
                 value: linkFilterEnabled ? '`Ativado` — Links de outros servidores serão bloqueados' : '`Desativado`',
                 inline: false,
@@ -184,6 +195,11 @@ function buildConfigPanel(guild) {
             .setLabel('Canal Denúncias')
             .setEmoji('📢')
             .setStyle(denunciasConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId('cfg_autorole')
+            .setLabel('Auto Role')
+            .setEmoji('➕')
+            .setStyle(autoRoleConfigured ? ButtonStyle.Success : ButtonStyle.Danger),
         new ButtonBuilder()
             .setCustomId('cfg_reset')
             .setLabel('Resetar Tudo')
@@ -324,6 +340,39 @@ async function handleConfigButton(interaction) {
             .setDescription(
                 'Selecione o **cargo** da equipe que poderá ver e gerenciar os tickets.\n\n' +
                 '> 💡 Dica: Selecione o cargo principal da sua equipe de suporte ou administração.'
+            )
+            .setFooter({ text: 'Detroit Roleplay • Configurações' });
+
+        await interaction.update({
+            embeds: [infoEmbed],
+            components: [selectRow, btnRow],
+        });
+        return;
+    }
+
+    // ── Auto Role → mostrar role select ──
+    if (customId === 'cfg_autorole') {
+        const selectMenu = new RoleSelectMenuBuilder()
+            .setCustomId('cfg_select_autorole')
+            .setPlaceholder('➕ Selecione o cargo automático')
+            .setMinValues(1)
+            .setMaxValues(1);
+
+        const backBtn = new ButtonBuilder()
+            .setCustomId('cfg_back')
+            .setLabel('Voltar')
+            .setEmoji('◀️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        const btnRow = new ActionRowBuilder().addComponents(backBtn);
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor(config.colors.info)
+            .setTitle('➕ Selecionar Auto Role')
+            .setDescription(
+                'Selecione o **cargo** que será dado automaticamente a novos membros que entrarem no servidor.\n\n' +
+                '> 💡 Dica: Selecione um cargo como `Membro` ou `Cidadão`.'
             )
             .setFooter({ text: 'Detroit Roleplay • Configurações' });
 
@@ -481,6 +530,7 @@ async function handleConfigButton(interaction) {
         await removeSetting('staffRoleId');
         await removeSetting('permanentCategoryId');
         await removeSetting('denunciasChannelId');
+        await removeSetting('autoRoleId');
         await removeSetting('linkFilterEnabled');
         await removeSetting('automodLogChannelId');
 
@@ -616,6 +666,19 @@ async function handleConfigSelect(interaction) {
     if (customId === 'cfg_select_staff') {
         const roleId = interaction.values[0];
         await saveSetting('staffRoleId', roleId);
+
+        if (!getSetting('guildId')) {
+            await saveSetting('guildId', interaction.guild.id);
+        }
+
+        const { embed, components } = buildConfigPanel(interaction.guild);
+        await interaction.update({ embeds: [embed], components });
+        return;
+    }
+
+    if (customId === 'cfg_select_autorole') {
+        const roleId = interaction.values[0];
+        await saveSetting('autoRoleId', roleId);
 
         if (!getSetting('guildId')) {
             await saveSetting('guildId', interaction.guild.id);

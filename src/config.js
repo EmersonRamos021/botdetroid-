@@ -24,6 +24,9 @@ module.exports = {
     get denunciasChannelId() {
         return getSetting('denunciasChannelId') || null;
     },
+    get autoRoleId() {
+        return getSetting('autoRoleId') || process.env.AUTO_ROLE_ID || null;
+    },
     get automodLogChannelId() {
         return getSetting('automodLogChannelId') || process.env.AUTOMOD_LOG_CHANNEL_ID || null;
     },

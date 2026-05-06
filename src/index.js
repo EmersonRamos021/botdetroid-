@@ -5,6 +5,7 @@ const { loadSettingsCache } = require('./utils/settings');
 const readyEvent = require('./events/ready');
 const interactionCreateEvent = require('./events/interactionCreate');
 const messageCreateEvent = require('./events/messageCreate');
+const guildMemberAddEvent = require('./events/guildMemberAdd');
 
 // ═══════════════════════════════════════
 // VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
@@ -59,6 +60,7 @@ client.commands.set(atualizacaoCommand.data.name, atualizacaoCommand);
 client.once('ready', () => readyEvent(client));
 client.on('interactionCreate', (interaction) => interactionCreateEvent(client, interaction));
 client.on('messageCreate', (message) => messageCreateEvent(client, message));
+client.on('guildMemberAdd', (member) => guildMemberAddEvent(client, member));
 
 // ═══════════════════════════════════════
 // GRACEFUL SHUTDOWN
