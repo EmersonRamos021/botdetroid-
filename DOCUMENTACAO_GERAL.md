@@ -9,7 +9,7 @@ Bem-vindo à documentação oficial arquitetural do **Detroit Roleplay**. Este d
 O projeto foi construído dividindo as responsabilidades em 3 sistemas principais que se conectam ao mesmo banco de dados MySQL:
 
 1. **Site Principal (Loja):** Focado na experiência do jogador. Autenticação rápida via Discord, visualização de produtos, uso de cupons de desconto e geração de pagamentos PIX automatizados.
-2. **Painel Admin (Dashboard):** Focado na gestão da equipe. Permite criar novos produtos com envio automático de imagens para a **SquareCloud Blob API**, gerenciar cupons, listar histórico financeiro, coordenar IDs in-game e acessar o histórico em HTML de tickets fechados.
+2. **Painel Admin (Dashboard):** Focado na gestão da equipe através de Controle de Acesso Baseado em Cargos (RBAC). Permite gerenciar convites e permissões da staff, auditar ações através de logs integrados, gerenciar produtos (com upload para **SquareCloud Blob API**), cupons, fluxo financeiro, IDs e transcrições de tickets.
 3. **Bot do Discord:** Focado em utilidade e interação. Responsável por mandar DMs com confirmações de compra, entregar benefícios in-game via tickets (salvando transcrições no banco de dados), e fornecer moderação automática e auto-role.
 
 ```mermaid
@@ -67,6 +67,23 @@ erDiagram
         VARCHAR avatar_url
         VARCHAR email
         ENUM role "user | admin"
+    }
+
+    admins {
+        INT id PK
+        VARCHAR email UK
+        VARCHAR password_hash
+        ENUM role "superadmin | staff"
+        JSON permissions
+        VARCHAR invite_token
+    }
+    
+    admin_logs {
+        INT id PK
+        VARCHAR admin_email
+        VARCHAR action
+        TEXT details
+        TIMESTAMP created_at
     }
     
     categories {

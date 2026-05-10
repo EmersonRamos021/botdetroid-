@@ -22,7 +22,7 @@ Qualquer recriação deste projeto deve utilizar as seguintes tecnologias para m
 *   **Site e Admin:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS (Vanilla, sem componentes pesados pré-prontos, priorizando Glassmorphism e Dark Mode premium).
 *   **Bot do Discord:** Node.js, `discord.js` v14, TypeScript ou JavaScript ES6+.
 *   **Hospedagem e Storage:** As aplicações rodam na SquareCloud. As imagens dos produtos são hospedadas utilizando a **SquareCloud Blob API**.
-*   **Autenticação:** `next-auth` (Discord OAuth para o Site, Credentials para o Admin).
+*   **Autenticação:** `next-auth` (Discord OAuth para o Site, Credentials com E-mail + Senha gerenciada via sistema de Convites/Magic-Links para o Admin).
 *   **Pagamentos:** API nativa do **Mercado Pago** (Geração de PIX e recepção de Webhooks `payment.updated`).
 
 ---
@@ -31,7 +31,9 @@ Qualquer recriação deste projeto deve utilizar as seguintes tecnologias para m
 
 Crie um banco de dados MySQL com as seguintes tabelas e relacionamentos:
 
-*   `users`: Armazena os usuários logados (`id`, `discord_id`, `email`, `role`).
+*   `users`: Armazena os usuários logados da loja (`id`, `discord_id`, `email`, `role`).
+*   `admins`: Armazena a staff do painel (`email`, `password_hash`, `role` [superadmin, staff], `permissions` [JSON], `invite_token`).
+*   `admin_logs`: Histórico de auditoria de ações (`admin_email`, `action`, `details`).
 *   `categories`: Categorias da loja (`name`, `slug`, `icon`). Ex: vips, veiculos, planos, drops.
 *   `products`: Produtos vinculados às categorias (`title`, `price`, `image_url`, `category_id`).
 *   `orders`: Tabela vital de pedidos (`code`, `status` [pendente, pago, entregue], `mp_payment_id`, `game_id`).
@@ -56,13 +58,15 @@ O site deve ter um design **escuro (Dark Mode), premium, com micro-animações (
 
 ## 🛡️ 5. Especificações: Painel Admin
 
-Interface voltada para gestão e produtividade, protegida por usuário e senha estáticos ou sistema de convites.
+Interface voltada para gestão e produtividade, protegida por sistema de autenticação via E-mail e Senha (com senhas definidas no primeiro acesso via Token). Possui um sistema completo de RBAC (Role-Based Access Control).
 
 **Regras de Negócio do Admin:**
-1. **Dashboard Financeiro:** Gráficos com total arrecadado no dia, no mês, e ticket médio.
+1. **Dashboard Financeiro:** Gráficos com total arrecadado no dia, no mês, e ticket médio. Elementos do painel são ocultos caso o staff não tenha permissão.
 2. **Produtos:** Criação de produtos. **Regra de Imagem:** Ao dar upload na foto, renomear para um padrão válido (`a-z`, `0-9`, `_`) e enviar via POST (`axios` ou `fetch` seguro) para a `SquareCloud Blob API`. Salvar apenas o link gerado no banco de dados.
 3. **Pedidos:** Lista em tempo real (atualizada) de pedidos com status. O admin pode mudar o status para `entregue` assim que entregar o item in-game.
 4. **Histórico de Tickets:** Leitura da tabela `tickets`. O admin pode visualizar o `transcript_html` inteiro de um atendimento que já foi fechado no Discord.
+5. **Gestão de Staff (`/admin/staff`):** O superadmin pode convidar novos membros usando seus e-mails. O sistema gera um link (`/invite?token=...`) para o staff criar sua senha. O superadmin marca as caixinhas de permissões granulares (ex: "Apenas Financeiro", "Apenas Produtos").
+6. **Auditoria (`/admin/logs`):** Qualquer ação (criar, editar, excluir) executada no painel fica gravada de forma permanente para monitoramento.
 
 ---
 
