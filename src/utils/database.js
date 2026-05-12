@@ -54,6 +54,21 @@ async function initDatabase() {
     await db.execute(`INSERT IGNORE INTO counters (name, count) VALUES ('denuncia', 0)`);
     await db.execute(`INSERT IGNORE INTO counters (name, count) VALUES ('revisao', 0)`);
 
+    // Tabela de tickets fechados (Transcrições HTML)
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS tickets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            channel_name VARCHAR(100) NOT NULL,
+            owner_id VARCHAR(30) NOT NULL,
+            owner_tag VARCHAR(100) NOT NULL,
+            ticket_type VARCHAR(50) NOT NULL,
+            closed_by VARCHAR(100) NOT NULL,
+            closed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            transcript_html LONGTEXT NOT NULL,
+            INDEX idx_owner (owner_id)
+        )
+    `);
+
     // Tabela de relatórios (casos unificados — denúncia + revisão no mesmo registro)
     await db.execute(`
         CREATE TABLE IF NOT EXISTS reports (
