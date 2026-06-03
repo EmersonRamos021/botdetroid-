@@ -33,6 +33,9 @@ module.exports = {
     get linkFilterEnabled() {
         return getSetting('linkFilterEnabled') === 'true';
     },
+    get memberCounterChannelId() {
+        return getSetting('memberCounterChannelId') || null;
+    },
 
     // ── Auto-Moderação: Regras ──
     antiFlood: {

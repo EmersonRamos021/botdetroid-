@@ -15,4 +15,10 @@ module.exports = (client) => {
         }],
         status: 'dnd', // vermelho combina com a identidade visual
     });
+
+    const { updateMemberCounter } = require('../utils/memberCounter');
+    
+    // Atualizar contador de membros na inicialização e a cada 6 minutos (para evitar limite da API do Discord)
+    updateMemberCounter(client);
+    setInterval(() => updateMemberCounter(client), 6 * 60 * 1000);
 };
