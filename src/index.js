@@ -96,6 +96,15 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
         console.log('🔄 Carregando configurações...');
         await loadSettingsCache();
 
+        // Auto-reload settings every 60 seconds so it reflects Admin Panel changes
+        setInterval(async () => {
+            try {
+                await loadSettingsCache();
+            } catch (e) {
+                console.error('Erro no auto-reload das configurações:', e.message);
+            }
+        }, 60000);
+
         console.log('🔄 Conectando ao Discord...');
         await client.login(config.token);
 
