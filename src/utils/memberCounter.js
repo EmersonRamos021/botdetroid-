@@ -1,13 +1,31 @@
 const config = require('../config');
 
-// Números em fonte bold (matemática)
+// Números em fonte bold (matemática) - fallback para canais de voz (que não suportam emojis customizados no nome)
 const boldDigits = {
   '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒',
   '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
 };
 
+// Emojis customizados para canais de texto (suportam custom emojis no tópico)
+const customEmojiNames = {
+  '0': 'pureza_i36', '1': 'pureza_i37', '2': 'pureza_i38', '3': 'pureza_i39', '4': 'pureza_i40',
+  '5': 'pureza_i41', '6': 'pureza_i42', '7': 'pureza_i43', '8': 'pureza_i44', '9': 'pureza_i45'
+};
+
 function formatBoldNumber(number) {
     return number.toString().split('').map(d => boldDigits[d] || d).join(' ');
+}
+
+function formatCustomEmojiNumber(client, number) {
+    return number.toString().split('').map(d => {
+        const emojiName = customEmojiNames[d];
+        if (emojiName) {
+            const emoji = client.emojis.cache.find(e => e.name === emojiName);
+            // Se encontrou o emoji no servidor, retorna o código dele. Se não, usa o bold como fallback.
+            return emoji ? emoji.toString() : (boldDigits[d] || d);
+        }
+        return d;
+    }).join(' ');
 }
 
 /**
@@ -29,21 +47,21 @@ async function updateMemberCounter(client) {
         if (!channel) return;
 
         const memberCount = guild.memberCount;
-        const formattedCount = formatBoldNumber(memberCount);
 
-        // Se for canal de texto, atualiza o tópico
+        // Se for canal de texto, atualiza o tópico (usando Emojis Customizados)
         if (channel.isTextBased() && !channel.isThread()) {
-            const newTopic = `𝟏 𝟕 𝟒 𝟖 𝟏 𝟑 População`; // Formato original que o usuário pediu? Não, dinâmico:
-            const dynamicTopic = `${formattedCount} População`;
+            const formattedCountCustom = formatCustomEmojiNumber(client, memberCount);
+            const dynamicTopic = `${formattedCountCustom} População`;
             
             if (channel.topic !== dynamicTopic) {
                 await channel.setTopic(dynamicTopic, 'Atualização de contador de membros');
                 console.log(`[Contador] Tópico do canal ${channel.name} atualizado para: ${dynamicTopic}`);
             }
         } 
-        // Se for canal de voz, atualiza o nome
+        // Se for canal de voz, atualiza o nome (usando fallback bold)
         else if (channel.isVoiceBased()) {
-            const newName = `👥 População: ${formattedCount}`;
+            const formattedCountVoice = formatBoldNumber(memberCount);
+            const newName = `👥 População: ${formattedCountVoice}`;
             if (channel.name !== newName) {
                 await channel.setName(newName, 'Atualização de contador de membros');
                 console.log(`[Contador] Nome do canal de voz atualizado para: ${newName}`);
