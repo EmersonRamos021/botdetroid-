@@ -39,8 +39,8 @@ module.exports = {
 
     // ── Auto-Moderação: Regras ──
     antiFlood: {
-        maxMessages: 5,
-        timeWindowMs: 4000, // 5 mensagens em 4 segundos aciona o anti-flood
+        get maxMessages() { return Number(getSetting('antiFlood_maxMessages')) || 5; },
+        get timeWindowMs() { return Number(getSetting('antiFlood_timeWindow')) || 4000; },
     },
     // Palavras bloqueadas padrão (Pode ser atualizado conforme demanda)
     get badWords() {
