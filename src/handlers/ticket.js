@@ -266,8 +266,8 @@ async function handleConfirmClose(interaction, client) {
                     .setTitle('📋 Transcrição do Ticket')
                     .setDescription(
                         `Seu ticket **#${channel.name}** foi fechado.\n\n` +
-                        `**Clique no botão abaixo para baixar a transcrição**.\n` +
-                        `O arquivo é do formato HTML e pode ser aberto no seu navegador para ver como o ticket era.`
+                        `**Clique no botão abaixo para ver a transcrição online**.\n` +
+                        `O histórico completo do seu atendimento foi salvo na nuvem.`
                     )
                     .addFields(
                         { name: '🔒 Fechado por', value: `${interaction.user.tag}`, inline: true },
@@ -276,25 +276,21 @@ async function handleConfirmClose(interaction, client) {
                     .setFooter({ text: 'Detroit Roleplay' })
                     .setTimestamp();
 
-                let dmPayload = { embeds: [dmEmbed] };
+                // URL externa da transcrição baseada no nome do canal
+                const externalTranscriptUrl = `https://transcripts.detroitroleplay.com/${channel.name}`;
 
-                if (transcriptUrl) {
-                    // Envia com botão (sem anexo)
-                    const row = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setLabel('Baixar Transcrição')
-                            .setEmoji('📥')
-                            .setStyle(ButtonStyle.Link)
-                            .setURL(transcriptUrl)
-                    );
-                    dmPayload.components = [row];
-                } else {
-                    // Fallback: reutiliza o buffer já gerado
-                    const dmTranscriptFile = new AttachmentBuilder(transcriptBuffer, {
-                        name: `transcript-${channel.name}.html`,
-                    });
-                    dmPayload.files = [dmTranscriptFile];
-                }
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Ver Transcrição Online')
+                        .setEmoji('🌐')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL(externalTranscriptUrl)
+                );
+
+                let dmPayload = { 
+                    embeds: [dmEmbed],
+                    components: [row]
+                };
 
                 await ticketOwner.send(dmPayload);
             } catch (e) {
