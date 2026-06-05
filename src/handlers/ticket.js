@@ -276,8 +276,8 @@ async function handleConfirmClose(interaction, client) {
                     .setFooter({ text: 'Detroit Roleplay' })
                     .setTimestamp();
 
-                // URL externa da transcrição baseada no nome do canal
-                const externalTranscriptUrl = `https://transcripts.detroitroleplay.com/${channel.name}`;
+                // URL externa da transcrição baseada no visualizador recém-criado no painel Admin
+                const externalTranscriptUrl = `https://admin.detroit.squareweb.app/t/${channel.name}`;
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
