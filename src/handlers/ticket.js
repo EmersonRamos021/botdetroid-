@@ -277,7 +277,7 @@ async function handleConfirmClose(interaction, client) {
                     .setTimestamp();
 
                 // URL externa da transcrição baseada no visualizador recém-criado no painel Admin
-                const externalTranscriptUrl = `https://detroit.squareweb.app/t/${channel.name}`;
+                const externalTranscriptUrl = `https://admin.detroitroleplay.com/t/${channel.name}`;
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
