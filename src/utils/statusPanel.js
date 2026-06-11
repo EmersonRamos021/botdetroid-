@@ -47,7 +47,7 @@ async function buildStatusPayload(client) {
     const container = new ContainerBuilder()
         .setAccentColor(isOnline ? config.colors.success : config.colors.danger)
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('# 🚀 CONECTE-SE\n| Acompanhe o status do servidor em tempo real\n\n---')
+            new TextDisplayBuilder().setContent(`# ${emojiStatus} CONECTE-SE\n| Acompanhe o status do servidor em tempo real\n\n---`)
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`**STATUS**\n${isOnline ? '🟢 Online' : '🔴 Offline'} ${emojiPessoas} (${players}/${maxPlayers})\n\n**IP MTA:**\n${ip ? `\`\`\`connect mtasa://${ip}:${port}\`\`\`` : '\`\`\`Configure o IP no Painel Admin\`\`\`'}`)
