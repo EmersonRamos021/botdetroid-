@@ -12,7 +12,7 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            const payload = await buildStatusPayload();
+            const payload = await buildStatusPayload(interaction.client);
 
             const sentMessage = await interaction.channel.send(payload);
 

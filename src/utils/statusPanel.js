@@ -2,7 +2,19 @@ const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, B
 const gamedig = require('gamedig');
 const config = require('../config');
 
-async function buildStatusPayload() {
+async function buildStatusPayload(client) {
+    function getEmojiId(name, fallback) {
+        if (!client) return fallback;
+        const emoji = client.emojis.cache.find(e => e.name === name);
+        return emoji ? emoji.id : fallback;
+    }
+
+    function getEmojiString(name, fallback) {
+        if (!client) return fallback;
+        const emoji = client.emojis.cache.find(e => e.name === name);
+        return emoji ? `<:${emoji.name}:${emoji.id}>` : fallback;
+    }
+
     const ip = config.mtaServerIp;
     const port = config.mtaServerPort || 22003;
 
@@ -29,13 +41,16 @@ async function buildStatusPayload() {
         }
     }
 
+    const emojiPessoas = getEmojiString('pessoas', '👥');
+    const emojiStatus = getEmojiString('chatsetacrescimento1', '📈');
+
     const container = new ContainerBuilder()
         .setAccentColor(isOnline ? config.colors.success : config.colors.danger)
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('# 🚀 CONECTE-SE\n| Acompanhe o status do servidor em tempo real')
+            new TextDisplayBuilder().setContent('# 🚀 CONECTE-SE\n| Acompanhe o status do servidor em tempo real\n\n---')
         )
         .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(`---\n**STATUS**\n${isOnline ? '🟢 Online' : '🔴 Offline'} (${players}/${maxPlayers})\n\n**IP MTA:**\n${ip ? `\`\`\`connect mtasa://${ip}:${port}\`\`\`` : '\`\`\`Configure o IP no Painel Admin\`\`\`'}`)
+            new TextDisplayBuilder().setContent(`**STATUS**\n${isOnline ? '🟢 Online' : '🔴 Offline'} ${emojiPessoas} (${players}/${maxPlayers})\n\n**IP MTA:**\n${ip ? `\`\`\`connect mtasa://${ip}:${port}\`\`\`` : '\`\`\`Configure o IP no Painel Admin\`\`\`'}`)
         );
 
     const row = new ActionRowBuilder();
@@ -44,7 +59,7 @@ async function buildStatusPayload() {
         row.addComponents(
             new ButtonBuilder()
                 .setLabel('Loja')
-                .setEmoji('🛒')
+                .setEmoji(getEmojiId('carrinho_site', '🛒'))
                 .setURL(config.mtaSocialStore)
                 .setStyle(ButtonStyle.Link)
         );
@@ -54,7 +69,7 @@ async function buildStatusPayload() {
         row.addComponents(
             new ButtonBuilder()
                 .setLabel('Instagram')
-                .setEmoji('📸')
+                .setEmoji(getEmojiId('instragam', '📸'))
                 .setURL(config.mtaSocialInsta)
                 .setStyle(ButtonStyle.Link)
         );
@@ -64,7 +79,7 @@ async function buildStatusPayload() {
         row.addComponents(
             new ButtonBuilder()
                 .setLabel('TikTok')
-                .setEmoji('🎵')
+                .setEmoji(getEmojiId('tiktok', '🎵'))
                 .setURL(config.mtaSocialTiktok)
                 .setStyle(ButtonStyle.Link)
         );
@@ -74,7 +89,7 @@ async function buildStatusPayload() {
         row.addComponents(
             new ButtonBuilder()
                 .setLabel('YouTube')
-                .setEmoji('📺')
+                .setEmoji(getEmojiId('youtube', '📺'))
                 .setURL(config.mtaSocialYoutube)
                 .setStyle(ButtonStyle.Link)
         );
@@ -94,7 +109,7 @@ async function buildStatusPayload() {
     container.addActionRowComponents(row);
 
     container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`---\n⏳ Atualizado a cada 2 minutos • Detroit Roleplay`)
+        new TextDisplayBuilder().setContent(`\n---\n⏳ Atualizado a cada 2 minutos • Detroit Roleplay`)
     );
 
     return { 
@@ -116,7 +131,7 @@ async function updateStatusPanel(client) {
         const message = await channel.messages.fetch(messageId);
         if (!message) return;
 
-        const payload = await buildStatusPayload();
+        const payload = await buildStatusPayload(client);
         await message.edit(payload);
     } catch (e) {
         // Silencia erro se a mensagem foi deletada, etc.
