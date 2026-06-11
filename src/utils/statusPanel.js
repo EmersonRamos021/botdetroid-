@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const gamedig = require('gamedig');
 const config = require('../config');
 
@@ -29,29 +29,14 @@ async function buildStatusPayload() {
         }
     }
 
-    const embed = new EmbedBuilder()
-        .setColor(isOnline ? config.colors.success : config.colors.danger)
-        .setTitle('🚀 CONECTE-SE')
-        .setDescription('Acompanhe o status do servidor em tempo real.')
-        .addFields(
-            { 
-                name: 'STATUS', 
-                value: isOnline ? '🟢 Online' : '🔴 Offline', 
-                inline: true 
-            },
-            { 
-                name: 'JOGADORES', 
-                value: `${players}/${maxPlayers}`, 
-                inline: true 
-            },
-            {
-                name: 'IP MTA:',
-                value: ip ? `\`\`\`connect mtasa://${ip}:${port}\`\`\`` : '\`\`\`Configure o IP no Painel Admin\`\`\`',
-                inline: false
-            }
+    const container = new ContainerBuilder()
+        .setAccentColor(isOnline ? config.colors.success : config.colors.danger)
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('# 🚀 CONECTE-SE\n| Acompanhe o status do servidor em tempo real')
         )
-        .setFooter({ text: `Atualizado a cada 2 minutos • Detroit Roleplay` })
-        .setTimestamp();
+        .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(`---\n**STATUS**\n${isOnline ? '🟢 Online' : '🔴 Offline'} (${players}/${maxPlayers})\n\n**IP MTA:**\n${ip ? `\`\`\`connect mtasa://${ip}:${port}\`\`\`` : '\`\`\`Configure o IP no Painel Admin\`\`\`'}`)
+        );
 
     const row = new ActionRowBuilder();
 
@@ -106,7 +91,16 @@ async function buildStatusPayload() {
         );
     }
 
-    return { embeds: [embed], components: [row] };
+    container.addActionRowComponents(row);
+
+    container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`---\n⏳ Atualizado a cada 2 minutos • Detroit Roleplay`)
+    );
+
+    return { 
+        components: [container], 
+        flags: [MessageFlags.IsComponentsV2] 
+    };
 }
 
 async function updateStatusPanel(client) {
