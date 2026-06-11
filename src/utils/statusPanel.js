@@ -1,4 +1,5 @@
-const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, AttachmentBuilder, FileBuilder } = require('discord.js');
+const path = require('path');
 const gamedig = require('gamedig');
 const config = require('../config');
 
@@ -43,9 +44,15 @@ async function buildStatusPayload(client) {
 
     const emojiPessoas = getEmojiString('pessoas', '👥');
     const emojiStatus = getEmojiString('chatsetacrescimento1', '📈');
+    
+    const bannerPath = path.join(__dirname, '../../assets/banner_status.png');
+    const attachment = new AttachmentBuilder(bannerPath, { name: 'banner_status.png' });
 
     const container = new ContainerBuilder()
         .setAccentColor(isOnline ? config.colors.success : config.colors.danger)
+        .addFileComponents(
+            new FileBuilder().setURL('attachment://banner_status.png')
+        )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`# ${emojiStatus} CONECTE-SE\n| Acompanhe o status do servidor em tempo real\n\n---`)
         )
@@ -114,7 +121,8 @@ async function buildStatusPayload(client) {
 
     return { 
         components: [container], 
-        flags: [MessageFlags.IsComponentsV2] 
+        flags: [MessageFlags.IsComponentsV2],
+        files: [attachment]
     };
 }
 
