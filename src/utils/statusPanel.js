@@ -1,4 +1,4 @@
-const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, AttachmentBuilder, FileBuilder } = require('discord.js');
+const { ContainerBuilder, TextDisplayBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, AttachmentBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
 const path = require('path');
 const gamedig = require('gamedig');
 const config = require('../config');
@@ -50,8 +50,10 @@ async function buildStatusPayload(client) {
 
     const container = new ContainerBuilder()
         .setAccentColor(isOnline ? config.colors.success : config.colors.danger)
-        .addFileComponents(
-            new FileBuilder().setURL('attachment://banner_status.png')
+        .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+                new MediaGalleryItemBuilder().setURL('attachment://banner_status.png')
+            )
         )
         .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(`# ${emojiStatus} CONECTE-SE\n| Acompanhe o status do servidor em tempo real\n\n---`)
