@@ -37,6 +37,16 @@ module.exports = {
         return getSetting('memberCounterChannelId') || null;
     },
 
+    // ── Status do Servidor (MTA) ──
+    get mtaServerIp() { return getSetting('mtaServerIp') || null; },
+    get mtaServerPort() { return Number(getSetting('mtaServerPort')) || 22003; },
+    get mtaSocialStore() { return getSetting('mtaSocialStore') || null; },
+    get mtaSocialInsta() { return getSetting('mtaSocialInsta') || null; },
+    get mtaSocialTiktok() { return getSetting('mtaSocialTiktok') || null; },
+    get mtaSocialYoutube() { return getSetting('mtaSocialYoutube') || null; },
+    get statusPanelChannelId() { return getSetting('statusPanelChannelId') || null; },
+    get statusPanelMessageId() { return getSetting('statusPanelMessageId') || null; },
+
     // ── Auto-Moderação: Regras ──
     antiFlood: {
         get maxMessages() { return Number(getSetting('antiFlood_maxMessages')) || 5; },

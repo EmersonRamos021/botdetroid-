@@ -17,8 +17,13 @@ module.exports = (client) => {
     });
 
     const { updateMemberCounter } = require('../utils/memberCounter');
+    const { updateStatusPanel } = require('../utils/statusPanel');
     
     // Atualizar contador de membros na inicialização e a cada 6 minutos (para evitar limite da API do Discord)
     updateMemberCounter(client);
     setInterval(() => updateMemberCounter(client), 6 * 60 * 1000);
+
+    // Atualizar Painel Fixo de Status do Servidor MTA a cada 2 minutos
+    updateStatusPanel(client);
+    setInterval(() => updateStatusPanel(client), 2 * 60 * 1000);
 };

@@ -45,6 +45,7 @@ const destrancarCommand = require('./commands/destrancar');
 const falarCommand = require('./commands/falar');
 const enqueteCommand = require('./commands/enquete');
 const atualizacaoCommand = require('./commands/atualizacao');
+const setupStatusCommand = require('./commands/setup-status');
 
 client.commands.set(setupAtendimento.data.name, setupAtendimento);
 client.commands.set(setupDenuncias.data.name, setupDenuncias);
@@ -55,6 +56,7 @@ client.commands.set(destrancarCommand.data.name, destrancarCommand);
 client.commands.set(falarCommand.data.name, falarCommand);
 client.commands.set(enqueteCommand.data.name, enqueteCommand);
 client.commands.set(atualizacaoCommand.data.name, atualizacaoCommand);
+client.commands.set(setupStatusCommand.data.name, setupStatusCommand);
 
 // Registrar eventos
 client.once('ready', () => readyEvent(client));
