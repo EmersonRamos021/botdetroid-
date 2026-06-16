@@ -101,7 +101,21 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
         // Auto-reload settings every 60 seconds so it reflects Admin Panel changes
         setInterval(async () => {
             try {
-                await loadSettingsCache();
+                const settings = await loadSettingsCache();
+                
+                // Checa se o painel admin solicitou alteração de avatar
+                if (settings.botAvatarUrl) {
+                    try {
+                        console.log('🔄 Atualizando avatar do bot via Painel Admin...');
+                        await client.user.setAvatar(settings.botAvatarUrl);
+                        console.log('✅ Avatar do bot atualizado com sucesso!');
+                    } catch (err) {
+                        console.error('❌ Erro ao atualizar avatar do bot (rate limit?):', err.message);
+                    } finally {
+                        const { removeSetting } = require('./utils/settings');
+                        await removeSetting('botAvatarUrl');
+                    }
+                }
             } catch (e) {
                 console.error('Erro no auto-reload das configurações:', e.message);
             }
