@@ -12,6 +12,18 @@ module.exports = {
     get ticketCategoryId() {
         return getSetting('ticketCategoryId') || process.env.TICKET_CATEGORY_ID || null;
     },
+    get ticketCategoryCompras() {
+        return getSetting('ticketCategoryCompras') || null;
+    },
+    get ticketCategorySuporte() {
+        return getSetting('ticketCategorySuporte') || null;
+    },
+    get ticketCategoryDenuncia() {
+        return getSetting('ticketCategoryDenuncia') || null;
+    },
+    get ticketCategoryRevisao() {
+        return getSetting('ticketCategoryRevisao') || null;
+    },
     get permanentCategoryId() {
         return getSetting('permanentCategoryId') || null;
     },

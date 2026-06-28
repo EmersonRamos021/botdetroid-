@@ -95,9 +95,18 @@ async function createTicketChannel(interaction, type, formData = {}) {
         permissionOverwrites,
     };
 
-    // Adicionar à categoria se configurada
-    if (config.ticketCategoryId) {
-        channelOptions.parent = config.ticketCategoryId;
+    // Determinar qual categoria usar com base no tipo
+    let targetCategory = null;
+    if (type === 'ticket_compras') targetCategory = config.ticketCategoryCompras;
+    else if (type === 'ticket_suporte') targetCategory = config.ticketCategorySuporte;
+    else if (type === 'denuncia') targetCategory = config.ticketCategoryDenuncia;
+    else if (type === 'revisao') targetCategory = config.ticketCategoryRevisao;
+
+    // Fallback para a categoria genérica caso a específica não esteja configurada
+    if (!targetCategory) targetCategory = config.ticketCategoryId;
+
+    if (targetCategory) {
+        channelOptions.parent = targetCategory;
     }
 
     const channel = await guild.channels.create(channelOptions);
