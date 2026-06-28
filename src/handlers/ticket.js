@@ -60,20 +60,6 @@ async function createTicketChannel(interaction, type, formData = {}) {
         },
     ];
 
-    // Adicionar cargo staff (se configurado)
-    if (config.staffRoleId) {
-        permissionOverwrites.push({
-            id: config.staffRoleId,
-            allow: [
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.AttachFiles,
-                PermissionFlagsBits.ReadMessageHistory,
-                PermissionFlagsBits.ManageMessages,
-            ],
-        });
-    }
-
     // Adicionar permissão para o bot
     permissionOverwrites.push({
         id: interaction.client.user.id,
@@ -86,6 +72,38 @@ async function createTicketChannel(interaction, type, formData = {}) {
             PermissionFlagsBits.ManageMessages,
         ],
     });
+
+    // Buscar no banco de dados quais membros específicos da staff têm acesso a este tipo
+    try {
+        const { query } = require('../utils/database');
+        const staffRows = await query('SELECT discord_id, categories FROM ticket_staff');
+        
+        for (const row of staffRows) {
+            let cats = [];
+            try {
+                cats = typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories;
+            } catch(e) {}
+            
+            // Se o tipo do ticket (ex: 'ticket_compras') for um dos selecionados
+            // Ou se mapearmos 'ticket_compras' para 'compras'
+            const typeKey = type.replace('ticket_', ''); // ticket_compras -> compras, ticket_suporte -> suporte
+            
+            if (cats.includes(typeKey)) {
+                permissionOverwrites.push({
+                    id: row.discord_id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.AttachFiles,
+                        PermissionFlagsBits.ReadMessageHistory,
+                        PermissionFlagsBits.ManageMessages,
+                    ],
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Erro ao buscar ticket_staff no banco:', e);
+    }
 
     // Criar canal
     const channelOptions = {
