@@ -568,7 +568,8 @@ async function handleTicketEvaluate(interaction) {
 }
 
 async function handleTicketEvaluateSubmit(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    // Responde imediatamente para o Discord não invalidar a interação
+    await interaction.reply({ content: '✅ Avaliação recebida! Fechando o ticket em alguns segundos...', ephemeral: true }).catch(() => {});
     
     try {
         const customId = interaction.customId; // modal_avaliar_DBID_STAFFID
@@ -648,9 +649,7 @@ async function handleTicketEvaluateSubmit(interaction) {
             }
         }
 
-        // Deletar o canal
-        await interaction.editReply('✅ Avaliação enviada! Fechando o ticket...');
-        
+        // Deletar o canal após 3 segundos
         setTimeout(async () => {
             try {
                 await channel.delete('Ticket avaliado e fechado');
@@ -659,7 +658,7 @@ async function handleTicketEvaluateSubmit(interaction) {
 
     } catch (error) {
         console.error('Erro ao processar avaliação:', error);
-        await interaction.editReply('❌ Ocorreu um erro ao processar sua avaliação.');
+        // Evita erro de unknown message caso tente enviar algo depois
     }
 }
 
