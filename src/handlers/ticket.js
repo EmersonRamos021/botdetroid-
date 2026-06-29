@@ -50,10 +50,12 @@ async function createTicketChannel(interaction, type, formData = {}) {
     const permissionOverwrites = [
         {
             id: guild.id,
+            type: 0, // role
             deny: [PermissionFlagsBits.ViewChannel],
         },
         {
             id: user.id,
+            type: 1, // member
             allow: [
                 PermissionFlagsBits.ViewChannel,
                 PermissionFlagsBits.SendMessages,
@@ -66,6 +68,7 @@ async function createTicketChannel(interaction, type, formData = {}) {
     // Adicionar permissão para o bot
     permissionOverwrites.push({
         id: interaction.client.user.id,
+        type: 1, // member
         allow: [
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
@@ -91,17 +94,21 @@ async function createTicketChannel(interaction, type, formData = {}) {
             // Ou se mapearmos 'ticket_compras' para 'compras'
             const typeKey = type.replace('ticket_', ''); // ticket_compras -> compras, ticket_suporte -> suporte
             
-            if (cats.includes(typeKey)) {
-                permissionOverwrites.push({
-                    id: row.discord_id,
-                    allow: [
-                        PermissionFlagsBits.ViewChannel,
-                        PermissionFlagsBits.SendMessages,
-                        PermissionFlagsBits.AttachFiles,
-                        PermissionFlagsBits.ReadMessageHistory,
-                        PermissionFlagsBits.ManageMessages,
-                    ],
-                });
+            if (cats.includes(typeKey) && row.discord_id) {
+                const discordIdStr = String(row.discord_id);
+                if (/^\d{17,20}$/.test(discordIdStr)) {
+                    permissionOverwrites.push({
+                        id: discordIdStr,
+                        type: 1, // member
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.SendMessages,
+                            PermissionFlagsBits.AttachFiles,
+                            PermissionFlagsBits.ReadMessageHistory,
+                            PermissionFlagsBits.ManageMessages,
+                        ],
+                    });
+                }
             }
         }
     } catch (e) {
