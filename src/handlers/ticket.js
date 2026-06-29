@@ -6,6 +6,9 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
 } = require('discord.js');
 const config = require('../config');
 const {
@@ -221,7 +224,6 @@ async function handleConfirmClose(interaction, client) {
     });
 
     try {
-        // Buscar o dono do ticket
         let ticketOwner = null;
         if (ownerId) {
             try {
@@ -231,38 +233,35 @@ async function handleConfirmClose(interaction, client) {
             }
         }
 
-        // Gerar transcrição HTML
         const transcriptBuffer = await generateTranscript(channel, ticketOwner || interaction.user, ticketType);
         const transcriptFile = new AttachmentBuilder(transcriptBuffer, {
             name: `transcript-${channel.name}.html`,
         });
 
-        // ============================================
-        // SALVAR NO BANCO DE DADOS (NOVO)
-        // ============================================
+        // 1. Salvar no banco
+        let ticketDbId = null;
         try {
             const transcriptHtml = transcriptBuffer.toString('utf-8');
             const pool = getPool();
-            await pool.execute(
-                `INSERT INTO tickets (channel_name, owner_id, owner_tag, ticket_type, closed_by, transcript_html)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
+            const [result] = await pool.execute(
+                `INSERT INTO tickets (channel_name, owner_id, owner_tag, ticket_type, closed_by, closed_by_id, transcript_html)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [
                     channel.name,
                     ticketOwner ? ticketOwner.id : (ownerId || 'desconhecido'),
                     ticketOwner ? ticketOwner.tag : 'Desconhecido',
                     ticketType,
                     interaction.user.tag,
+                    interaction.user.id, // O ID do Staff que clicou em fechar
                     transcriptHtml
                 ]
             );
-            console.log(`✅ [Tickets] Ticket #${channel.name} salvo no banco de dados com sucesso.`);
+            ticketDbId = result.insertId;
         } catch (dbError) {
             console.error('❌ Erro ao salvar ticket no banco de dados:', dbError.message);
         }
-        // ============================================
 
-        // Enviar transcrição no canal de logs
-        let transcriptUrl = null;
+        // 2. Enviar transcrição no canal de logs
         if (config.logChannelId) {
             const logChannel = interaction.guild.channels.cache.get(config.logChannelId);
             if (logChannel) {
@@ -272,106 +271,48 @@ async function handleConfirmClose(interaction, client) {
                     interaction.user,
                     ticketType,
                 );
-
-                const logMessage = await logChannel.send({
-                    embeds: [logEmbed],
-                    files: [transcriptFile],
-                });
-
-                const attachedFile = logMessage.attachments.first();
-                if (attachedFile) {
-                    transcriptUrl = attachedFile.url;
-                }
+                await logChannel.send({ embeds: [logEmbed], files: [transcriptFile] });
             }
         }
 
-        // Enviar transcrição na DM do dono do ticket
+        // 3. Trancar o canal (remover SendMessages do ticketOwner)
         if (ticketOwner) {
             try {
-                const dmEmbed = new EmbedBuilder()
-                    .setColor(config.colors.primary)
-                    .setTitle('📋 Transcrição do Ticket')
-                    .setDescription(
-                        `Seu ticket **#${channel.name}** foi fechado.\n\n` +
-                        `**Clique no botão abaixo para ver a transcrição online**.\n` +
-                        `O histórico completo do seu atendimento foi salvo na nuvem.`
-                    )
-                    .addFields(
-                        { name: '🔒 Fechado por', value: `${interaction.user.tag}`, inline: true },
-                        { name: '📅 Data', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
-                    )
-                    .setFooter({ text: 'Detroit Roleplay' })
-                    .setTimestamp();
-
-                // URL externa da transcrição baseada no visualizador recém-criado no painel Admin
-                const externalTranscriptUrl = `https://admin.detroitroleplay.com/t/${channel.name}`;
-
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setLabel('Ver Transcrição Online')
-                        .setEmoji('🌐')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL(externalTranscriptUrl)
-                );
-
-                let dmPayload = { 
-                    embeds: [dmEmbed],
-                    components: [row]
-                };
-
-                await ticketOwner.send(dmPayload);
-            } catch (e) {
-                console.error('Não foi possível enviar DM ao dono do ticket:', e.message);
-            }
+                await channel.permissionOverwrites.edit(ticketOwner.id, {
+                    SendMessages: false
+                });
+            } catch(e) {}
         }
 
-        // Mensagem de encerramento
+        // 4. Enviar mensagem pedindo avaliação
+        const evalEmbed = new EmbedBuilder()
+            .setColor(config.colors.primary)
+            .setTitle('📝 Atendimento Finalizado!')
+            .setDescription(`Olá ${ticketOwner ? ticketOwner : 'usuário'}, o seu ticket foi encerrado.\n\nPor favor, **avalie o atendimento** clicando no botão abaixo. Sua nota é muito importante para nós!`)
+            .setFooter({ text: 'Detroit Roleplay' });
+
+        const btnEval = new ButtonBuilder()
+            .setCustomId(`btn_avaliar_ticket_${ticketDbId || '0'}_${interaction.user.id}`)
+            .setLabel('Avaliar Atendimento')
+            .setStyle(ButtonStyle.Success)
+            .setEmoji('⭐');
+            
+        const btnSkip = new ButtonBuilder()
+            .setCustomId(`btn_pular_avaliacao_${ticketDbId || '0'}_${interaction.user.id}`)
+            .setLabel('Pular e Fechar')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('❌');
+
         await channel.send({
-            embeds: [
-                new EmbedBuilder()
-                    .setColor(config.colors.danger)
-                    .setTitle('🔒 Ticket Encerrado')
-                    .setDescription(
-                        `Este ticket foi fechado por ${interaction.user}.\n` +
-                        `A transcrição foi salva e enviada.\n\n` +
-                        `**Este canal será deletado em 5 segundos.**`
-                    )
-                    .setTimestamp(),
-            ],
+            content: ticketOwner ? `${ticketOwner}` : '',
+            embeds: [evalEmbed],
+            components: [new ActionRowBuilder().addComponents(btnEval, btnSkip)]
         });
-
-        // Deletar canal de voz temporário (se existir)
-        if (callId) {
-            try {
-                const callChannel = channel.guild.channels.cache.get(callId);
-                if (callChannel) await callChannel.delete('Ticket fechado');
-            } catch (err) {
-                console.error('Erro ao deletar call do ticket:', err);
-            }
-        }
-
-        // Deletar canal de texto após 5 segundos
-        setTimeout(async () => {
-            try {
-                await channel.delete('Ticket fechado');
-            } catch (e) {
-                console.error('Erro ao deletar canal do ticket:', e);
-            }
-        }, 5000);
 
     } catch (error) {
         console.error('Erro ao fechar ticket:', error);
-        await channel.send({
-            content: '❌ Ocorreu um erro ao gerar a transcrição, mas o ticket será fechado.',
-        });
-
-        setTimeout(async () => {
-            try {
-                await channel.delete('Ticket fechado (com erro)');
-            } catch (e) {
-                console.error('Erro ao deletar canal:', e);
-            }
-        }, 5000);
+        await channel.send({ content: '❌ Ocorreu um erro ao processar o encerramento.' });
+        setTimeout(() => channel.delete().catch(() => {}), 5000);
     }
 }
 
@@ -581,6 +522,155 @@ async function handleTicketCreateCall(interaction) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// AVALIAÇÃO DE TICKET
+// ═══════════════════════════════════════════════════════════════
+async function handleTicketEvaluate(interaction) {
+    const customId = interaction.customId; // btn_avaliar_ticket_DBID_STAFFID
+    const parts = customId.split('_');
+    const dbId = parts[3];
+    const staffId = parts[4];
+
+    const modal = new ModalBuilder()
+        .setCustomId(`modal_avaliar_${dbId}_${staffId}`)
+        .setTitle('⭐ Avaliar Atendimento');
+
+    const inputNota = new TextInputBuilder()
+        .setCustomId('input_nota')
+        .setLabel('Nota do Atendimento (1 a 5)')
+        .setPlaceholder('Ex: 5')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMinLength(1)
+        .setMaxLength(1);
+
+    const inputDesc = new TextInputBuilder()
+        .setCustomId('input_desc')
+        .setLabel('Descrição do Atendimento')
+        .setPlaceholder('Deixe um elogio ou crítica...')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(1000);
+
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(inputNota),
+        new ActionRowBuilder().addComponents(inputDesc)
+    );
+
+    await interaction.showModal(modal);
+}
+
+async function handleTicketEvaluateSubmit(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+    
+    try {
+        const customId = interaction.customId; // modal_avaliar_DBID_STAFFID
+        const parts = customId.split('_');
+        const dbId = parts[2];
+        const staffId = parts[3];
+        
+        let notaStr = interaction.fields.getTextInputValue('input_nota');
+        const desc = interaction.fields.getTextInputValue('input_desc');
+        
+        // Validar nota
+        let nota = parseInt(notaStr);
+        if (isNaN(nota) || nota < 1 || nota > 5) {
+            nota = 5; // Fallback
+        }
+
+        const channel = interaction.channel;
+        const topic = channel.topic || '';
+        const ownerMatch = topic.match(/owner:(\d+)/);
+        const ownerId = ownerMatch ? ownerMatch[1] : null;
+        const typeMatch = topic.match(/type:(\S+)/);
+        const ticketType = typeMatch ? typeMatch[1] : 'desconhecido';
+
+        // Atualizar DB
+        if (dbId && dbId !== '0') {
+            try {
+                const pool = getPool();
+                await pool.execute(
+                    'UPDATE tickets SET rating = ?, review_comment = ? WHERE id = ?',
+                    [nota, desc, dbId]
+                );
+            } catch (e) {
+                console.error('Erro ao atualizar avaliação no DB:', e);
+            }
+        }
+
+        // Buscar dados para a Embed
+        const avaliador = interaction.user;
+        let staffUser = `<@${staffId}>`;
+        if (staffId && staffId !== 'undefined') {
+            try {
+                const userObj = await interaction.client.users.fetch(staffId);
+                staffUser = `${userObj} (${staffId})`;
+            } catch (e) { }
+        }
+
+        // Enviar Embed no canal de avaliações
+        const reviewChannelId = config.reviewChannelId;
+        if (reviewChannelId) {
+            const reviewChannel = interaction.guild.channels.cache.get(reviewChannelId);
+            if (reviewChannel) {
+                const stars = '⭐'.repeat(nota) + '☆'.repeat(5 - nota);
+                
+                // Mapear motivo
+                const typeLabels = {
+                    'ticket_compras': 'Compras',
+                    'ticket_suporte': 'Suporte',
+                    'denuncia': 'Denúncia',
+                    'revisao': 'Revisão',
+                };
+                const motivo = typeLabels[ticketType] || ticketType;
+
+                const embed = new EmbedBuilder()
+                    .setColor('#2b2d31')
+                    .setTitle('Avaliação do Staff')
+                    .addFields(
+                        { name: '👤 Avaliador:', value: `↳ ${avaliador}, ${avaliador.id}` },
+                        { name: '👮 Staff:', value: `↳ ${staffUser}` },
+                        { name: '🕒 Data:', value: `↳ <t:${Math.floor(Date.now() / 1000)}:F>` },
+                        { name: '⭐ Nota do Atendimento:', value: `↳ ${stars} (${nota}/5)` },
+                        { name: '💬 Motivo do Atendimento:', value: `\`\`\`\n${motivo}\n\`\`\`` },
+                        { name: '📝 Descrição do Atendimento:', value: `\`\`\`\n${desc}\n\`\`\`` }
+                    )
+                    .setFooter({ text: 'Detroit Roleplay' });
+
+                await reviewChannel.send({ embeds: [embed] });
+            }
+        }
+
+        // Deletar o canal
+        await interaction.editReply('✅ Avaliação enviada! Fechando o ticket...');
+        
+        setTimeout(async () => {
+            try {
+                await channel.delete('Ticket avaliado e fechado');
+            } catch (e) { }
+        }, 3000);
+
+    } catch (error) {
+        console.error('Erro ao processar avaliação:', error);
+        await interaction.editReply('❌ Ocorreu um erro ao processar sua avaliação.');
+    }
+}
+
+async function handleSkipEvaluation(interaction) {
+    const channel = interaction.channel;
+    
+    await interaction.reply({
+        content: '✅ Avaliação pulada. O ticket será fechado em alguns segundos.',
+        ephemeral: true
+    });
+    
+    setTimeout(async () => {
+        try {
+            await channel.delete('Ticket fechado sem avaliação');
+        } catch (e) { }
+    }, 3000);
+}
+
 module.exports = {
     createTicketChannel,
     handleCloseTicket,
@@ -593,4 +683,7 @@ module.exports = {
     handleTicketRemUserIdSubmit,
     handleTicketCreateCall,
     handleTicketPermanent,
+    handleTicketEvaluate,
+    handleTicketEvaluateSubmit,
+    handleSkipEvaluation,
 };

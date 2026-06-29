@@ -24,6 +24,9 @@ module.exports = {
     get ticketCategoryRevisao() {
         return getSetting('ticketCategoryRevisao') || null;
     },
+    get reviewChannelId() {
+        return getSetting('reviewChannelId') || null;
+    },
     get permanentCategoryId() {
         return getSetting('permanentCategoryId') || null;
     },

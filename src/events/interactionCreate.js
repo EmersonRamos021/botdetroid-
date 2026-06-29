@@ -1,6 +1,6 @@
 const { handleAtendimentoSelect, handleAtendimentoModal } = require('../handlers/atendimento');
 const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal, handleAceitarNegar, handleAceitarNegarModal } = require('../handlers/denuncias');
-const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent } = require('../handlers/ticket');
+const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent, handleTicketEvaluate, handleTicketEvaluateSubmit, handleSkipEvaluation } = require('../handlers/ticket');
 const { handleConfigButton, handleConfigSelect, handleConfigModal } = require('../handlers/config');
 
 module.exports = async (client, interaction) => {
@@ -119,6 +119,16 @@ module.exports = async (client, interaction) => {
                 await handleTicketCreateCall(interaction);
                 return;
             }
+
+            // Botões de Avaliação de Ticket
+            if (interaction.customId.startsWith('btn_avaliar_ticket_')) {
+                await handleTicketEvaluate(interaction);
+                return;
+            }
+            if (interaction.customId.startsWith('btn_pular_avaliacao_')) {
+                await handleSkipEvaluation(interaction);
+                return;
+            }
         }
 
         // ═══════════════════════════════════════
@@ -198,6 +208,12 @@ module.exports = async (client, interaction) => {
             // Modal de config de palavras
             if (interaction.customId.startsWith('modal_bw_')) {
                 await handleConfigModal(interaction);
+                return;
+            }
+
+            // Modal de avaliação do ticket
+            if (interaction.customId.startsWith('modal_avaliar_')) {
+                await handleTicketEvaluateSubmit(interaction);
                 return;
             }
 
