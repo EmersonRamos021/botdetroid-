@@ -6,6 +6,7 @@ const readyEvent = require('./events/ready');
 const interactionCreateEvent = require('./events/interactionCreate');
 const messageCreateEvent = require('./events/messageCreate');
 const guildMemberAddEvent = require('./events/guildMemberAdd');
+const voiceStateUpdateEvent = require('./events/voiceStateUpdate');
 
 // ═══════════════════════════════════════
 // VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
@@ -29,6 +30,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates,
     ],
 });
 
@@ -63,6 +65,7 @@ client.once('ready', () => readyEvent(client));
 client.on('interactionCreate', (interaction) => interactionCreateEvent(client, interaction));
 client.on('messageCreate', (message) => messageCreateEvent(client, message));
 client.on('guildMemberAdd', (member) => guildMemberAddEvent(client, member));
+client.on('voiceStateUpdate', (oldState, newState) => voiceStateUpdateEvent.execute(oldState, newState, client));
 
 // ═══════════════════════════════════════
 // GRACEFUL SHUTDOWN
