@@ -1,5 +1,6 @@
 const config = require('../config');
 const { getPool } = require('../utils/database');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
     name: 'voiceStateUpdate',
@@ -34,16 +35,25 @@ module.exports = {
                         }
                     });
 
-                    // Mensagem a ser enviada no privado dos staffs
-                    const mensagem = `⚠️ **Atenção Staff!**\nO usuário **${newState.member.user.username}** (\`${newState.member.user.id}\`) acabou de entrar na Call **Aguardando Suporte**!\nPor favor, atenda-o assim que possível.`;
-
                     // Enviar DM para cada staff filtrado
                     for (const staff of staffsParaAvisar) {
                         try {
                             // Buscar o objeto do usuário na API do Discord
                             const staffUser = await client.users.fetch(staff.discord_id);
                             if (staffUser) {
-                                await staffUser.send(mensagem);
+                                const embed = new EmbedBuilder()
+                                    .setTitle('🔔 Novo Chamado de Suporte')
+                                    .setColor('#ffcc00')
+                                    .setDescription(`Olá <@${staff.discord_id}>!\n\nO jogador **${newState.member.user.username}** acabou de entrar na call **Aguardando Suporte**.\nPor favor, dirija-se à sala para atendê-lo!`)
+                                    .addFields(
+                                        { name: '👤 Usuário', value: `${newState.member.user}`, inline: true },
+                                        { name: '🆔 ID', value: `\`${newState.member.user.id}\``, inline: true }
+                                    )
+                                    .setThumbnail(newState.member.user.displayAvatarURL())
+                                    .setTimestamp()
+                                    .setFooter({ text: 'Detroit Roleplay • Sistema de Suporte', iconURL: client.user.displayAvatarURL() });
+
+                                await staffUser.send({ content: `<@${staff.discord_id}>, tem alguém aguardando atendimento!`, embeds: [embed] });
                             }
                         } catch (err) {
                             // O staff pode estar com a DM fechada
