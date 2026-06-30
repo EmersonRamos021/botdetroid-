@@ -27,7 +27,7 @@ module.exports = {
                     // Filtrar apenas staffs que têm 'suporte' nas categorias
                     const staffsParaAvisar = staffRows.filter(row => {
                         try {
-                            const cats = JSON.parse(row.categories || '[]');
+                            const cats = Array.isArray(row.categories) ? row.categories : JSON.parse(row.categories || '[]');
                             return cats.includes('suporte');
                         } catch (e) {
                             return false;
