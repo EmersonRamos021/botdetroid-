@@ -1,7 +1,13 @@
 # 🤖 Detroit Roleplay - Discord Bot
 
 Bot oficial e motor de moderação do ecossistema Detroit Roleplay.
-Este repositório faz parte de um ecossistema completo que integra o Bot do Discord, o Painel Administrativo e a Loja Oficial (Site), todos conectados a um único banco de dados.
+Este repositório faz parte de um ecossistema completo que integra o Bot do Discord, o Painel Administrativo, a Loja Oficial (Site) e o Bot Legal das Corporações.
+
+### Funcionalidades
+- Sistema de Tickets com Transcript e interface avançada.
+- Notificações de confirmação de Compra via Site.
+- Escuta ativa de Canais de Voz (Call de Suporte) para notificar Staffs.
+- Auto-Role e Auto-Moderação baseados nas configurações do Painel Web.
 
 ## 👨‍💻 Créditos
 - **Criação e Desenvolvimento:** Dev Emerson Ramos (apelido Samurai)
