@@ -27,6 +27,9 @@ module.exports = {
     get reviewChannelId() {
         return getSetting('reviewChannelId') || null;
     },
+    get supportVoiceChannelId() {
+        return getSetting('supportVoiceChannelId') || null;
+    },
     get permanentCategoryId() {
         return getSetting('permanentCategoryId') || null;
     },
