@@ -12,6 +12,7 @@ const falarCommand = require('./commands/falar');
 const enqueteCommand = require('./commands/enquete');
 const atualizacaoCommand = require('./commands/atualizacao');
 const setupStatusCommand = require('./commands/setup-status');
+const anuncioCommand = require('./commands/anuncio');
 
 const commands = [
     setupAtendimento.data.toJSON(),
@@ -24,6 +25,7 @@ const commands = [
     enqueteCommand.data.toJSON(),
     atualizacaoCommand.data.toJSON(),
     setupStatusCommand.data.toJSON(),
+    anuncioCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
