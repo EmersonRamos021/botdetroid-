@@ -7,6 +7,8 @@ const interactionCreateEvent = require('./events/interactionCreate');
 const messageCreateEvent = require('./events/messageCreate');
 const guildMemberAddEvent = require('./events/guildMemberAdd');
 const voiceStateUpdateEvent = require('./events/voiceStateUpdate');
+const messageDeleteEvent = require('./events/messageDelete');
+const messageUpdateEvent = require('./events/messageUpdate');
 
 // ═══════════════════════════════════════
 // VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
@@ -68,6 +70,8 @@ client.on('interactionCreate', (interaction) => interactionCreateEvent(client, i
 client.on('messageCreate', (message) => messageCreateEvent(client, message));
 client.on('guildMemberAdd', (member) => guildMemberAddEvent(client, member));
 client.on('voiceStateUpdate', (oldState, newState) => voiceStateUpdateEvent.execute(oldState, newState, client));
+client.on('messageDelete', (message) => messageDeleteEvent.execute(message, client));
+client.on('messageUpdate', (oldMessage, newMessage) => messageUpdateEvent.execute(oldMessage, newMessage, client));
 
 // ═══════════════════════════════════════
 // GRACEFUL SHUTDOWN

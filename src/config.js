@@ -36,6 +36,12 @@ module.exports = {
     get logChannelId() {
         return getSetting('logChannelId') || process.env.LOG_CHANNEL_ID || null;
     },
+    get logChatChannelId() {
+        return getSetting('logChatChannelId') || null;
+    },
+    get logVoiceChannelId() {
+        return getSetting('logVoiceChannelId') || null;
+    },
     get staffRoleId() {
         return getSetting('staffRoleId') || process.env.STAFF_ROLE_ID || null;
     },

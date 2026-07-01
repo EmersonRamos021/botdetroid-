@@ -66,5 +66,55 @@ module.exports = {
                 }
             }
         }
+
+        // ════════════════════════════════════════════
+        // LÓGICA DE AUDITORIA (LOGS DE VOZ)
+        // ════════════════════════════════════════════
+        const logVoiceChannelId = config.logVoiceChannelId || config.logChannelId;
+        if (!logVoiceChannelId) return;
+
+        const logChannel = client.channels.cache.get(logVoiceChannelId);
+        if (!logChannel) return;
+
+        try {
+            const embed = new EmbedBuilder()
+                .setAuthor({ name: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() })
+                .setTimestamp()
+                .setFooter({ text: `Detroit Roleplay • Logs de Voz`, iconURL: client.user.displayAvatarURL() });
+
+            // Entrou em um canal
+            if (!oldState.channelId && newState.channelId) {
+                embed.setTitle('🎤 Entrou em um canal de Voz')
+                     .setColor(config.colors.success)
+                     .addFields(
+                         { name: '👤 Usuário', value: `<@${newState.member.user.id}> (${newState.member.user.id})`, inline: true },
+                         { name: '📥 Canal', value: `<#${newState.channelId}>`, inline: true }
+                     );
+                await logChannel.send({ embeds: [embed] });
+            }
+            // Saiu de um canal
+            else if (oldState.channelId && !newState.channelId) {
+                embed.setTitle('🚪 Saiu de um canal de Voz')
+                     .setColor(config.colors.danger)
+                     .addFields(
+                         { name: '👤 Usuário', value: `<@${newState.member.user.id}> (${newState.member.user.id})`, inline: true },
+                         { name: '📤 Canal', value: `<#${oldState.channelId}>`, inline: true }
+                     );
+                await logChannel.send({ embeds: [embed] });
+            }
+            // Mudou de canal (movido ou trocou sozinho)
+            else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
+                embed.setTitle('↔️ Mudou de canal de Voz')
+                     .setColor(config.colors.warning)
+                     .addFields(
+                         { name: '👤 Usuário', value: `<@${newState.member.user.id}> (${newState.member.user.id})`, inline: false },
+                         { name: '📤 Saiu de', value: `<#${oldState.channelId}>`, inline: true },
+                         { name: '📥 Entrou em', value: `<#${newState.channelId}>`, inline: true }
+                     );
+                await logChannel.send({ embeds: [embed] });
+            }
+        } catch (error) {
+            console.error('Erro ao enviar log de auditoria de voz:', error.message);
+        }
     }
 };
