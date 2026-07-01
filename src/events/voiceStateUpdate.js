@@ -1,6 +1,6 @@
 const config = require('../config');
 const { getPool } = require('../utils/database');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, AuditLogEvent } = require('discord.js');
 
 module.exports = {
     name: 'voiceStateUpdate',
@@ -77,6 +77,38 @@ module.exports = {
         if (!logChannel) return;
 
         try {
+            let executor = null;
+
+            // Aguardar 1 segundo para garantir que o log de auditoria foi gerado pelo Discord
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Saiu ou foi desconectado
+            if (oldState.channelId && !newState.channelId) {
+                try {
+                    const fetchedLogs = await newState.guild.fetchAuditLogs({
+                        limit: 1,
+                        type: AuditLogEvent.MemberDisconnect,
+                    });
+                    const disconnectLog = fetchedLogs.entries.first();
+                    if (disconnectLog && disconnectLog.target.id === newState.member.user.id && Date.now() - disconnectLog.createdTimestamp < 5000) {
+                        executor = disconnectLog.executor;
+                    }
+                } catch (e) { /* ignorar erros de permissão se houver */ }
+            }
+            // Mudou ou foi movido
+            else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
+                try {
+                    const fetchedLogs = await newState.guild.fetchAuditLogs({
+                        limit: 1,
+                        type: AuditLogEvent.MemberMove,
+                    });
+                    const moveLog = fetchedLogs.entries.first();
+                    if (moveLog && moveLog.target.id === newState.member.user.id && Date.now() - moveLog.createdTimestamp < 5000) {
+                        executor = moveLog.executor;
+                    }
+                } catch (e) { /* ignorar */ }
+            }
+
             const embed = new EmbedBuilder()
                 .setAuthor({ name: newState.member.user.tag, iconURL: newState.member.user.displayAvatarURL() })
                 .setTimestamp()
@@ -94,23 +126,33 @@ module.exports = {
             }
             // Saiu de um canal
             else if (oldState.channelId && !newState.channelId) {
-                embed.setTitle('🚪 Saiu de um canal de Voz')
+                embed.setTitle(executor ? '🚪 Foi Desconectado (Kick)' : '🚪 Saiu de um canal de Voz')
                      .setColor(config.colors.danger)
                      .addFields(
                          { name: '👤 Usuário', value: `<@${newState.member.user.id}> (${newState.member.user.id})`, inline: true },
                          { name: '📤 Canal', value: `<#${oldState.channelId}>`, inline: true }
                      );
+                
+                if (executor) {
+                    embed.addFields({ name: '🛡️ Desconectado por', value: `<@${executor.id}>`, inline: false });
+                }
+
                 await logChannel.send({ embeds: [embed] });
             }
             // Mudou de canal (movido ou trocou sozinho)
             else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-                embed.setTitle('↔️ Mudou de canal de Voz')
+                embed.setTitle(executor ? '↔️ Foi Movido (Arraste)' : '↔️ Mudou de canal de Voz')
                      .setColor(config.colors.warning)
                      .addFields(
                          { name: '👤 Usuário', value: `<@${newState.member.user.id}> (${newState.member.user.id})`, inline: false },
                          { name: '📤 Saiu de', value: `<#${oldState.channelId}>`, inline: true },
                          { name: '📥 Entrou em', value: `<#${newState.channelId}>`, inline: true }
                      );
+
+                if (executor) {
+                    embed.addFields({ name: '🛡️ Movido por', value: `<@${executor.id}>`, inline: false });
+                }
+
                 await logChannel.send({ embeds: [embed] });
             }
         } catch (error) {
