@@ -310,11 +310,20 @@ async function handleConfirmClose(interaction, client) {
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('❌');
 
-        await channel.send({
-            content: ticketOwner ? `${ticketOwner}` : '',
-            embeds: [evalEmbed],
-            components: [new ActionRowBuilder().addComponents(btnEval, btnSkip)]
-        });
+        // Se o próprio dono estiver fechando o ticket dele mesmo, não faz sentido pedir avaliação.
+        // Ou se por acaso o ticketOwner for nulo.
+        if (!ticketOwner || ticketOwner.id === interaction.user.id) {
+            await channel.send({
+                content: '✅ Ticket encerrado pelo próprio criador (ou usuário não identificado). Fechando canal em 5 segundos...',
+            });
+            setTimeout(() => channel.delete().catch(() => {}), 5000);
+        } else {
+            await channel.send({
+                content: `${ticketOwner}`,
+                embeds: [evalEmbed],
+                components: [new ActionRowBuilder().addComponents(btnEval, btnSkip)]
+            });
+        }
 
     } catch (error) {
         console.error('Erro ao fechar ticket:', error);
@@ -537,6 +546,26 @@ async function handleTicketEvaluate(interaction) {
     const parts = customId.split('_');
     const dbId = parts[3];
     const staffId = parts[4];
+
+    // Verificar se quem clicou é o dono do ticket
+    const channel = interaction.channel;
+    const topic = channel.topic || '';
+    const ownerMatch = topic.match(/owner:(\d+)/);
+    const ownerId = ownerMatch ? ownerMatch[1] : null;
+
+    if (ownerId && interaction.user.id !== ownerId) {
+        return interaction.reply({
+            content: '❌ Apenas o dono do ticket pode avaliar este atendimento.',
+            ephemeral: true
+        });
+    }
+
+    if (interaction.user.id === staffId) {
+        return interaction.reply({
+            content: '❌ Você não pode avaliar seu próprio atendimento.',
+            ephemeral: true
+        });
+    }
 
     const modal = new ModalBuilder()
         .setCustomId(`modal_avaliar_${dbId}_${staffId}`)
