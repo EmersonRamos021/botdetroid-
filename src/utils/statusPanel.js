@@ -38,10 +38,6 @@ async function buildStatusPayload(client) {
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setLabel("🚀 Conectar-se")
-            .setStyle(ButtonStyle.Link)
-            .setURL(`mtasa://${ip}:${port}`),
-        new ButtonBuilder()
             .setLabel("💙 Discord")
             .setStyle(ButtonStyle.Link)
             .setURL("https://discord.gg/detroitroleplay")
