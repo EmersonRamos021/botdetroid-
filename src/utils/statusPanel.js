@@ -3,8 +3,8 @@ const gamedig = require('gamedig');
 const config = require('../config');
 
 async function buildStatusPayload(client) {
-    const ip = config.mtaServerIp || '151.242.227.122';
-    const port = config.mtaServerPort || 22613;
+    const ip = config.mtaServerIp || '144.225.189.145';
+    const port = config.mtaServerPort || 22112;
 
     let isOnline = false;
     let players = 0;
