@@ -3,6 +3,7 @@ const config = require('../config');
 
 const spamTracker = new Collection();
 const badWordTracker = new Collection();
+const ticketNotifTracker = new Collection();
 // Regex para detectar links de convite do Discord
 const INVITE_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/([a-zA-Z0-9-]+)/gi;
 
@@ -12,6 +13,41 @@ module.exports = async (client, message) => {
 
     // Staff é isento do filtro (Flood, Filtro de link e Palavras)
     const isStaff = config.staffRoleId && message.member?.roles.cache.has(config.staffRoleId);
+
+    // ═══════════════════════════════════════
+    // NOTIFICAÇÃO DE TICKET RESPONDIDO
+    // ═══════════════════════════════════════
+    if (isStaff && message.channel.topic && message.channel.topic.includes('ticket:')) {
+        const ownerMatch = message.channel.topic.match(/owner:(\d+)/);
+        if (ownerMatch) {
+            const ownerId = ownerMatch[1];
+            if (message.author.id !== ownerId) {
+                const now = Date.now();
+                const lastNotified = ticketNotifTracker.get(message.channel.id) || 0;
+                
+                // Cooldown de 5 minutos (300000ms) para não floodar a DM do usuário
+                if (now - lastNotified > 300000) {
+                    ticketNotifTracker.set(message.channel.id, now);
+                    
+                    try {
+                        const ownerUser = await client.users.fetch(ownerId);
+                        if (ownerUser) {
+                            const embed = new EmbedBuilder()
+                                .setColor(config.colors.primary || '#0099ff')
+                                .setTitle('🔔 Seu ticket foi respondido!')
+                                .setDescription(`Olá ${ownerUser}! Sua solicitação foi respondida.\n\n📌 Clique abaixo para ir ao seu ticket:\n**[➔ Acessar Ticket](https://discord.com/channels/${message.guild.id}/${message.channel.id})**`)
+                                .setFooter({ text: `${message.author.globalName || message.author.username} • Sistema de Tickets` })
+                                .setTimestamp();
+                            
+                            await ownerUser.send({ embeds: [embed] }).catch(() => {});
+                        }
+                    } catch (e) {
+                        console.error("Erro ao enviar DM de notificação de ticket:", e);
+                    }
+                }
+            }
+        }
+    }
 
     // ═══════════════════════════════════════
     // SISTEMA DE PALAVRAS PROIBIDAS
