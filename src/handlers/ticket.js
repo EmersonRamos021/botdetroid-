@@ -102,17 +102,25 @@ async function createTicketChannel(interaction, type, formData = {}) {
                         type: 1, // member
                         allow: [
                             PermissionFlagsBits.ViewChannel,
-                            PermissionFlagsBits.SendMessages,
-                            PermissionFlagsBits.AttachFiles,
                             PermissionFlagsBits.ReadMessageHistory,
-                            PermissionFlagsBits.ManageMessages,
                         ],
+                        deny: [PermissionFlagsBits.SendMessages] // Negar envio de msg até assumir
                     });
                 }
             }
         }
     } catch (e) {
         console.error('Erro ao buscar ticket_staff no banco:', e);
+    }
+
+    // Adicionar negação explícita de envio de mensagens para a tag Staff principal
+    if (config.staffRoleId) {
+        permissionOverwrites.push({
+            id: config.staffRoleId,
+            type: 0, // role
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+            deny: [PermissionFlagsBits.SendMessages]
+        });
     }
 
     // Criar canal
@@ -706,6 +714,104 @@ async function handleSkipEvaluation(interaction) {
     }, 3000);
 }
 
+async function handleClaimTicket(interaction) {
+    const channel = interaction.channel;
+    const member = interaction.member;
+    const isStaff = config.staffRoleId && member.roles.cache.has(config.staffRoleId);
+
+    if (!isStaff) {
+        return interaction.reply({
+            content: '❌ Apenas membros da equipe podem assumir tickets.',
+            ephemeral: true
+        });
+    }
+
+    try {
+        // Altera a permissão do staff específico para dar permissão de envio de mensagem
+        await channel.permissionOverwrites.edit(member.id, {
+            ViewChannel: true,
+            SendMessages: true,
+            AttachFiles: true,
+            ReadMessageHistory: true,
+            ManageMessages: true,
+        });
+
+        // Tentar remover o botão "Assumir Ticket" da mensagem original
+        try {
+            const message = interaction.message;
+            if (message && message.components) {
+                // Filtra o componente de assumir ticket das ActionRows
+                const newComponents = message.components.map(row => {
+                    const rowJson = row.toJSON();
+                    rowJson.components = rowJson.components.filter(c => c.custom_id !== 'btn_assumir_ticket');
+                    return rowJson;
+                }).filter(row => row.components.length > 0);
+
+                await message.edit({ components: newComponents });
+            }
+        } catch (e) {
+            console.error('Erro ao editar a mensagem para remover o botão assumir:', e);
+        }
+
+        await interaction.reply({
+            content: `✅ O staff ${member} assumiu este ticket e agora é o responsável por este atendimento.`
+        });
+    } catch (error) {
+        console.error('Erro ao assumir ticket:', error);
+        await interaction.reply({
+            content: '❌ Ocorreu um erro ao assumir o ticket. Tente novamente.',
+            ephemeral: true
+        });
+    }
+}
+
+async function handleNotifyInactivity(interaction) {
+    const channel = interaction.channel;
+    const isStaff = config.staffRoleId && interaction.member.roles.cache.has(config.staffRoleId);
+
+    if (!isStaff) {
+        return interaction.reply({
+            content: '❌ Apenas membros da equipe podem usar esta ação.',
+            ephemeral: true
+        });
+    }
+
+    // Achar o dono do ticket no topic
+    let ownerId = null;
+    if (channel.topic) {
+        const ownerMatch = channel.topic.match(/owner:(\d+)/);
+        if (ownerMatch) ownerId = ownerMatch[1];
+    }
+
+    if (!ownerId) {
+        return interaction.reply({
+            content: '❌ Não foi possível identificar o dono do ticket.',
+            ephemeral: true
+        });
+    }
+
+    try {
+        const embed = new EmbedBuilder()
+            .setColor(config.colors.warning)
+            .setTitle('⚠️ Aviso de Inatividade')
+            .setDescription(`Olá <@${ownerId}>!\n\nVocê ainda precisa de ajuda?\nSe não houver resposta neste ticket nas próximas horas, ele será **fechado automaticamente** por inatividade.`)
+            .setFooter({ text: 'Detroit Roleplay • Gerenciamento de Tickets' })
+            .setTimestamp();
+
+        // Envia a notificação marcando o usuário para que ele receba um ping
+        await interaction.reply({
+            content: `<@${ownerId}>`,
+            embeds: [embed]
+        });
+    } catch (error) {
+        console.error('Erro ao notificar inatividade:', error);
+        await interaction.reply({
+            content: '❌ Ocorreu um erro ao enviar a notificação.',
+            ephemeral: true
+        });
+    }
+}
+
 module.exports = {
     createTicketChannel,
     handleCloseTicket,
@@ -721,4 +827,6 @@ module.exports = {
     handleTicketEvaluate,
     handleTicketEvaluateSubmit,
     handleSkipEvaluation,
+    handleClaimTicket,
+    handleNotifyInactivity,
 };

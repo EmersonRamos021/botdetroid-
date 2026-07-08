@@ -1,6 +1,6 @@
 const { handleAtendimentoSelect, handleAtendimentoModal } = require('../handlers/atendimento');
 const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal, handleAceitarNegar, handleAceitarNegarModal } = require('../handlers/denuncias');
-const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent, handleTicketEvaluate, handleTicketEvaluateSubmit, handleSkipEvaluation } = require('../handlers/ticket');
+const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent, handleTicketEvaluate, handleTicketEvaluateSubmit, handleSkipEvaluation, handleClaimTicket, handleNotifyInactivity } = require('../handlers/ticket');
 const { handleConfigButton, handleConfigSelect, handleConfigModal } = require('../handlers/config');
 
 module.exports = async (client, interaction) => {
@@ -111,6 +111,18 @@ module.exports = async (client, interaction) => {
             // Botão Gerenciar Ticket
             if (interaction.customId === 'btn_gerenciar_ticket') {
                 await handleManageTicket(interaction);
+                return;
+            }
+
+            // Botão Assumir Ticket
+            if (interaction.customId === 'btn_assumir_ticket') {
+                await handleClaimTicket(interaction);
+                return;
+            }
+
+            // Botão Notificar Inatividade
+            if (interaction.customId === 'btn_notificar_inatividade') {
+                await handleNotifyInactivity(interaction);
                 return;
             }
 

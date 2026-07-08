@@ -123,7 +123,13 @@ function buildTicketButtons() {
         .setStyle(ButtonStyle.Secondary)
         .setEmoji('⚙️');
 
-    return new ActionRowBuilder().addComponents(btnFechar, btnGerenciar);
+    const btnAssumir = new ButtonBuilder()
+        .setCustomId('btn_assumir_ticket')
+        .setLabel('Assumir Ticket')
+        .setStyle(ButtonStyle.Success)
+        .setEmoji('✋');
+
+    return new ActionRowBuilder().addComponents(btnAssumir, btnFechar, btnGerenciar);
 }
 
 function buildTicketManageEmbed() {
@@ -158,8 +164,15 @@ function buildTicketManageComponents() {
         .setStyle(ButtonStyle.Secondary)
         .setEmoji('📌');
 
+    const btnInatividade = new ButtonBuilder()
+        .setCustomId('btn_notificar_inatividade')
+        .setLabel('Notificar Inatividade')
+        .setStyle(ButtonStyle.Warning)
+        .setEmoji('🔔');
+
     return [
-        new ActionRowBuilder().addComponents(btnCall, btnAddId, btnRemId, btnPermanent)
+        new ActionRowBuilder().addComponents(btnCall, btnAddId, btnRemId, btnPermanent),
+        new ActionRowBuilder().addComponents(btnInatividade)
     ];
 }
 
