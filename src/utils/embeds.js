@@ -167,7 +167,7 @@ function buildTicketManageComponents() {
     const btnInatividade = new ButtonBuilder()
         .setCustomId('btn_notificar_inatividade')
         .setLabel('Notificar Inatividade')
-        .setStyle(ButtonStyle.Warning)
+        .setStyle(ButtonStyle.Secondary)
         .setEmoji('🔔');
 
     return [
