@@ -50,7 +50,8 @@ module.exports = {
                 .setMinValue(1)),
 
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        // Torna a resposta pública (visível para todos no chat)
+        await interaction.deferReply({ ephemeral: false });
 
         const filtro = interaction.options.getString('filtro') || 'todos';
         const pagina = interaction.options.getInteger('pagina') || 1;
