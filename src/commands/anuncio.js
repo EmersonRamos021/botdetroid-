@@ -29,6 +29,30 @@ module.exports = {
         .addAttachmentOption(option => 
             option.setName('miniatura')
                 .setDescription('Uma imagem pequena para ficar no canto superior direito.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo1_titulo')
+                .setDescription('Opcional: Título do primeiro campo extra.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo1_valor')
+                .setDescription('Opcional: Texto do primeiro campo extra.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo2_titulo')
+                .setDescription('Opcional: Título do segundo campo extra.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo2_valor')
+                .setDescription('Opcional: Texto do segundo campo extra.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo3_titulo')
+                .setDescription('Opcional: Título do terceiro campo extra.')
+                .setRequired(false))
+        .addStringOption(option => 
+            option.setName('campo3_valor')
+                .setDescription('Opcional: Texto do terceiro campo extra.')
                 .setRequired(false)),
                 
     async execute(interaction) {
@@ -40,6 +64,14 @@ module.exports = {
         const imagem = interaction.options.getAttachment('imagem');
         const miniatura = interaction.options.getAttachment('miniatura');
 
+        // Obter os campos opcionais
+        const c1t = interaction.options.getString('campo1_titulo');
+        const c1v = interaction.options.getString('campo1_valor')?.replace(/\\n/g, '\n');
+        const c2t = interaction.options.getString('campo2_titulo');
+        const c2v = interaction.options.getString('campo2_valor')?.replace(/\\n/g, '\n');
+        const c3t = interaction.options.getString('campo3_titulo');
+        const c3v = interaction.options.getString('campo3_valor')?.replace(/\\n/g, '\n');
+
         // Construir o Embed
         const embed = new EmbedBuilder()
             .setTitle(titulo)
@@ -47,7 +79,11 @@ module.exports = {
             .setColor(cor)
             .setTimestamp()
             .setFooter({ text: `Anúncio publicado por ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() });
-
+            
+        // Adicionar campos extras dinamicamente
+        if (c1t && c1v) embed.addFields({ name: c1t, value: c1v, inline: false });
+        if (c2t && c2v) embed.addFields({ name: c2t, value: c2v, inline: false });
+        if (c3t && c3v) embed.addFields({ name: c3t, value: c3v, inline: false });
         // Adicionar imagens se foram anexadas
         if (imagem) {
             // Verificar se o arquivo anexado é realmente uma imagem
