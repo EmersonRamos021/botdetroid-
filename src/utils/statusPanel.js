@@ -77,8 +77,14 @@ async function updateStatusPanel(client) {
         const payload = await buildStatusPayload(client);
         await message.edit(payload);
     } catch (e) {
-        // Silencia erro se a mensagem foi deletada, etc.
-        console.error('Erro ao atualizar Painel de Status:', e.message);
+        if (e.message.includes('Unknown Message') || e.code === 10008) {
+            console.log('⚠️ Mensagem de Status deletada. Removendo configuração...');
+            const { removeSetting } = require('./settings');
+            await removeSetting('statusPanelMessageId');
+            await removeSetting('statusPanelChannelId');
+        } else {
+            console.error('Erro ao atualizar Painel de Status:', e.message);
+        }
     }
 }
 
