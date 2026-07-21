@@ -53,6 +53,7 @@ const setupStatusCommand = require('./commands/setup-status');
 const anuncioCommand = require('./commands/anuncio');
 const vendasCommand = require('./commands/vendas');
 const idsCommand = require('./commands/ids');
+const conectarCommand = require('./commands/conectar');
 
 client.commands.set(setupAtendimento.data.name, setupAtendimento);
 client.commands.set(setupDenuncias.data.name, setupDenuncias);
@@ -67,6 +68,7 @@ client.commands.set(setupStatusCommand.data.name, setupStatusCommand);
 client.commands.set(anuncioCommand.data.name, anuncioCommand);
 client.commands.set(vendasCommand.data.name, vendasCommand);
 client.commands.set(idsCommand.data.name, idsCommand);
+client.commands.set(conectarCommand.data.name, conectarCommand);
 
 // Registrar eventos
 client.once('ready', () => readyEvent(client));
