@@ -101,6 +101,25 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // ═══════════════════════════════════════
+// PROTEÇÃO CONTRA CRASHES (ANTI-QUEDA)
+// ═══════════════════════════════════════
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ [ANTI-CRASH] Rejeição de Promise não tratada:', promise, 'Razão:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('⚠️ [ANTI-CRASH] Exceção não capturada:', error);
+});
+
+process.on('uncaughtExceptionMonitor', (error, origin) => {
+    console.error('⚠️ [ANTI-CRASH] Monitor de Exceção:', error, origin);
+});
+
+client.on('error', (error) => {
+    console.error('⚠️ [ANTI-CRASH] Erro no Cliente Discord:', error);
+});
+
+// ═══════════════════════════════════════
 // INICIALIZAÇÃO
 // ═══════════════════════════════════════
 (async () => {
