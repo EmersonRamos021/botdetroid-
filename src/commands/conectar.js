@@ -19,7 +19,7 @@ module.exports = {
             new ButtonBuilder()
                 .setLabel('🚀 Conectar-se')
                 .setStyle(ButtonStyle.Link)
-                .setURL('mtasa://jogar.detroitroleplay.com:22003'),
+                .setURL('https://detroitroleplay.com/jogar'),
             new ButtonBuilder()
                 .setLabel('💙 Site')
                 .setStyle(ButtonStyle.Link)
