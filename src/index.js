@@ -153,6 +153,41 @@ client.on('error', (error) => {
             }
         }, 60000);
 
+        // Cron Job para verificar VIPs expirados a cada 1 hora (3600000 ms)
+        setInterval(async () => {
+            try {
+                const { query } = require('./utils/database');
+                const expirados = await query(`SELECT id, discord_id, role_id FROM active_vips WHERE expires_at <= NOW()`);
+                
+                if (expirados.length > 0) {
+                    const guild = client.guilds.cache.get(config.guildId);
+                    if (!guild) {
+                        console.error('⚠️ [CRON VIP] Guild não encontrada no cache do bot.');
+                        return;
+                    }
+
+                    for (const vip of expirados) {
+                        try {
+                            const member = await guild.members.fetch(vip.discord_id).catch(() => null);
+                            if (member) {
+                                await member.roles.remove(vip.role_id);
+                                console.log(`✅ [CRON VIP] Cargo VIP ${vip.role_id} removido do usuário ${vip.discord_id} (Expirou)`);
+                            } else {
+                                console.log(`⚠️ [CRON VIP] Usuário ${vip.discord_id} não está mais no servidor, removendo registro do banco.`);
+                            }
+                        } catch (err) {
+                            console.error(`❌ [CRON VIP] Erro ao remover cargo do usuário ${vip.discord_id}:`, err.message);
+                        }
+                        
+                        // Deleta registro independente do member existir (já expirou)
+                        await query(`DELETE FROM active_vips WHERE id = ?`, [vip.id]);
+                    }
+                }
+            } catch (e) {
+                console.error('❌ Erro no Cron Job de VIPs:', e.message);
+            }
+        }, 3600000);
+
         console.log('🔄 Conectando ao Discord...');
         await client.login(config.token);
 

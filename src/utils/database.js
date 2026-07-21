@@ -106,6 +106,18 @@ async function initDatabase() {
         )
     `);
 
+    // Tabela de VIPs Automáticos
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS active_vips (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            discord_id VARCHAR(50) NOT NULL,
+            role_id VARCHAR(50) NOT NULL,
+            order_code VARCHAR(100),
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Migration: adicionar colunas novas (caso a tabela já exista sem elas)
     const newColumns = [
         { name: 'resolved_by', definition: 'VARCHAR(30) DEFAULT NULL' },
