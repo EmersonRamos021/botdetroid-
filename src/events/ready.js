@@ -20,7 +20,10 @@ module.exports = (client) => {
 
     const { updateMemberCounter } = require('../utils/memberCounter');
     const { updateStatusPanel } = require('../utils/statusPanel');
+    const { performFullBackup } = require('../utils/backup');
     
+    // Backup diário a cada 24 horas (86400000 ms)
+    setInterval(() => performFullBackup(client), 24 * 60 * 60 * 1000);
     // Atualizar contador de membros na inicialização e a cada 6 minutos (para evitar limite da API do Discord)
     updateMemberCounter(client);
     setInterval(() => updateMemberCounter(client), 6 * 60 * 1000);

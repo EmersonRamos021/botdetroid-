@@ -286,7 +286,19 @@ async function handleConfirmClose(interaction, client) {
                     interaction.user,
                     ticketType,
                 );
-                await logChannel.send({ embeds: [logEmbed], files: [transcriptFile] });
+                let components = [];
+                if (ticketDbId) {
+                    components = [
+                        new ActionRowBuilder().addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`btn_reabrir_ticket_${ticketDbId}`)
+                                .setLabel('🔓 Reabrir Ticket')
+                                .setStyle(ButtonStyle.Primary)
+                        )
+                    ];
+                }
+
+                await logChannel.send({ embeds: [logEmbed], files: [transcriptFile], components });
             }
         }
 
@@ -812,6 +824,98 @@ async function handleNotifyInactivity(interaction) {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// REABRIR TICKET
+// ═══════════════════════════════════════════════════════════════
+async function handleReopenTicket(interaction, client) {
+    const ticketDbId = interaction.customId.split('_')[3];
+    if (!ticketDbId) {
+        return interaction.reply({ content: '❌ ID do ticket não encontrado.', ephemeral: true });
+    }
+
+    // Verificar se quem clicou é staff
+    if (config.staffRoleId && !interaction.member.roles.cache.has(config.staffRoleId)) {
+        return interaction.reply({ content: '❌ Apenas a Staff pode reabrir tickets.', ephemeral: true });
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    try {
+        const { getPool } = require('../utils/database');
+        const pool = getPool();
+        const [rows] = await pool.execute('SELECT * FROM tickets WHERE id = ?', [ticketDbId]);
+        
+        if (rows.length === 0) {
+            return interaction.editReply({ content: '❌ Registro do ticket não encontrado no banco de dados.' });
+        }
+
+        const ticketData = rows[0];
+
+        // Recriar canal
+        let targetCategory = config.ticketCategoryId;
+        if (ticketData.ticket_type === 'ticket_compras') targetCategory = config.ticketCategoryCompras;
+        else if (ticketData.ticket_type === 'ticket_suporte') targetCategory = config.ticketCategorySuporte;
+        else if (ticketData.ticket_type === 'denuncia') targetCategory = config.ticketCategoryDenuncia;
+        else if (ticketData.ticket_type === 'revisao') targetCategory = config.ticketCategoryRevisao;
+
+        const permissionOverwrites = [
+            {
+                id: interaction.guild.id,
+                deny: [PermissionFlagsBits.ViewChannel],
+            },
+            {
+                id: interaction.client.user.id,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ReadMessageHistory],
+            },
+            {
+                id: ticketData.owner_id,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
+            }
+        ];
+
+        if (config.staffRoleId) {
+            permissionOverwrites.push({
+                id: config.staffRoleId,
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory],
+            });
+        }
+
+        const newChannel = await interaction.guild.channels.create({
+            name: `reaberto-${ticketData.owner_id}`,
+            type: 0,
+            topic: `owner:${ticketData.owner_id} | type:${ticketData.ticket_type} | status:open | ticket:${ticketData.id}`,
+            parent: targetCategory || null,
+            permissionOverwrites
+        });
+
+        // Tentar enviar o histórico original
+        if (ticketData.transcript_html) {
+            const transcriptBuffer = Buffer.from(ticketData.transcript_html, 'utf-8');
+            const file = new AttachmentBuilder(transcriptBuffer, { name: 'historico_anterior.html' });
+            
+            const embed = new EmbedBuilder()
+                .setColor(config.colors.primary)
+                .setTitle('🔓 Ticket Reaberto')
+                .setDescription(`Este ticket foi reaberto por <@${interaction.user.id}>.\nO histórico do atendimento anterior está anexado acima.`)
+                .setTimestamp();
+
+            await newChannel.send({ 
+                content: `<@${ticketData.owner_id}> Seu ticket foi reaberto!`,
+                embeds: [embed], 
+                files: [file] 
+            });
+        }
+
+        // Desativar o botão para não reabrir o mesmo 2x
+        await interaction.message.edit({ components: [] });
+        await interaction.editReply({ content: `✅ Ticket reaberto com sucesso em <#${newChannel.id}>!` });
+
+    } catch (e) {
+        console.error('Erro ao reabrir ticket:', e);
+        await interaction.editReply({ content: '❌ Erro interno ao reabrir ticket.' });
+    }
+}
+
 module.exports = {
     createTicketChannel,
     handleCloseTicket,
@@ -829,4 +933,5 @@ module.exports = {
     handleSkipEvaluation,
     handleClaimTicket,
     handleNotifyInactivity,
+    handleReopenTicket,
 };

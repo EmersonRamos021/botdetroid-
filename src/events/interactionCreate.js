@@ -1,6 +1,6 @@
 const { handleAtendimentoSelect, handleAtendimentoModal } = require('../handlers/atendimento');
 const { handleDenunciaButton, handleDenunciaModal, handleRevisaoModal, handleConsultaModal, handleAceitarNegar, handleAceitarNegarModal } = require('../handlers/denuncias');
-const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent, handleTicketEvaluate, handleTicketEvaluateSubmit, handleSkipEvaluation, handleClaimTicket, handleNotifyInactivity } = require('../handlers/ticket');
+const { handleCloseTicket, handleConfirmClose, handleCancelClose, handleManageTicket, handleTicketCreateCall, handleTicketAddUserModalOpen, handleTicketAddUserIdSubmit, handleTicketRemUserModalOpen, handleTicketRemUserIdSubmit, handleTicketPermanent, handleTicketEvaluate, handleTicketEvaluateSubmit, handleSkipEvaluation, handleClaimTicket, handleNotifyInactivity, handleReopenTicket } = require('../handlers/ticket');
 const { handleConfigButton, handleConfigSelect, handleConfigModal } = require('../handlers/config');
 
 module.exports = async (client, interaction) => {
@@ -139,6 +139,12 @@ module.exports = async (client, interaction) => {
             }
             if (interaction.customId.startsWith('btn_pular_avaliacao_')) {
                 await handleSkipEvaluation(interaction);
+                return;
+            }
+
+            // Botão de Reabrir Ticket (Log)
+            if (interaction.customId.startsWith('btn_reabrir_ticket_')) {
+                await handleReopenTicket(interaction, client);
                 return;
             }
         }

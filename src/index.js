@@ -9,6 +9,8 @@ const guildMemberAddEvent = require('./events/guildMemberAdd');
 const voiceStateUpdateEvent = require('./events/voiceStateUpdate');
 const messageDeleteEvent = require('./events/messageDelete');
 const messageUpdateEvent = require('./events/messageUpdate');
+const channelDeleteEvent = require('./events/channelDelete');
+const roleDeleteEvent = require('./events/roleDelete');
 
 // ═══════════════════════════════════════
 // VALIDAÇÃO DE VARIÁVEIS DE AMBIENTE
@@ -54,6 +56,8 @@ const anuncioCommand = require('./commands/anuncio');
 const vendasCommand = require('./commands/vendas');
 const idsCommand = require('./commands/ids');
 const conectarCommand = require('./commands/conectar');
+const backupCommand = require('./commands/backup');
+const restaurarCommand = require('./commands/restaurar_servidor');
 
 client.commands.set(setupAtendimento.data.name, setupAtendimento);
 client.commands.set(setupDenuncias.data.name, setupDenuncias);
@@ -69,6 +73,8 @@ client.commands.set(anuncioCommand.data.name, anuncioCommand);
 client.commands.set(vendasCommand.data.name, vendasCommand);
 client.commands.set(idsCommand.data.name, idsCommand);
 client.commands.set(conectarCommand.data.name, conectarCommand);
+client.commands.set(backupCommand.data.name, backupCommand);
+client.commands.set(restaurarCommand.data.name, restaurarCommand);
 
 // Registrar eventos
 client.once('ready', () => readyEvent(client));
@@ -78,6 +84,8 @@ client.on('guildMemberAdd', (member) => guildMemberAddEvent(client, member));
 client.on('voiceStateUpdate', (oldState, newState) => voiceStateUpdateEvent.execute(oldState, newState, client));
 client.on('messageDelete', (message) => messageDeleteEvent.execute(message, client));
 client.on('messageUpdate', (oldMessage, newMessage) => messageUpdateEvent.execute(oldMessage, newMessage, client));
+client.on('channelDelete', (channel) => channelDeleteEvent.execute(channel, client));
+client.on('roleDelete', (role) => roleDeleteEvent.execute(role, client));
 
 // ═══════════════════════════════════════
 // GRACEFUL SHUTDOWN
