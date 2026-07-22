@@ -11,6 +11,7 @@ const {
     TextInputStyle,
 } = require('discord.js');
 const config = require('../config');
+const { parseTranscript } = require('../utils/parseHtml');
 const {
     buildTicketEmbed,
     buildTicketButtons,
@@ -896,7 +897,7 @@ async function handleReopenTicket(interaction, client) {
             const embed = new EmbedBuilder()
                 .setColor(config.colors.primary)
                 .setTitle('🔓 Ticket Reaberto')
-                .setDescription(`Este ticket foi reaberto por <@${interaction.user.id}>.\nO histórico do atendimento anterior está anexado acima.`)
+                .setDescription(`Este ticket foi reaberto por <@${interaction.user.id}>.\nO histórico antigo do chat foi restaurado abaixo.`)
                 .setTimestamp();
 
             await newChannel.send({ 
@@ -904,6 +905,32 @@ async function handleReopenTicket(interaction, client) {
                 embeds: [embed], 
                 files: [file] 
             });
+
+            // Parsear e enviar webhooks
+            try {
+                const messages = parseTranscript(ticketData.transcript_html);
+                if (messages.length > 0) {
+                    const msgsToSend = messages.slice(-50); // ultimas 50
+                    
+                    const webhook = await newChannel.createWebhook({
+                        name: 'Reabertura Ticket',
+                    });
+
+                    for (const msg of msgsToSend) {
+                        await webhook.send({
+                            content: msg.content.substring(0, 2000),
+                            username: msg.author,
+                            avatarURL: msg.avatar,
+                        });
+                        // delay de 400ms para evitar rate limit
+                        await new Promise(resolve => setTimeout(resolve, 400));
+                    }
+
+                    await webhook.delete();
+                }
+            } catch (err) {
+                console.error("Erro ao enviar webhooks de reabertura:", err);
+            }
         }
 
         // Desativar o botão para não reabrir o mesmo 2x
