@@ -12,7 +12,7 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(config.colors.primary)
             .setAuthor({ name: 'Detroit Roleplay', iconURL: interaction.client.user.displayAvatarURL() })
-            .setDescription(`**<:editar:1529345223233372250> Informações**\n\`\`\`Utilize 'Conectar-se' para se conectar em nosso servidor, certifique-se de ter o MTA:SA instalado.\`\`\`\n**🛡️ Nome do servidor:**\n\`\`\`[BR] DETROIT ROLEPLAY | WHITELIST | discord.gg/detroitroleplay\`\`\`\n**<:usuarios:1529346255841660938> Status:**\n\`\`\`🟢 Online\`\`\`\n**<:conexao:1529343828845269223> Conectar - Cole o comando abaixo no F8:**\n\`\`\`connect jogar.detroitroleplay.com\`\`\``)
+            .setDescription(`**<:editar:1529345223233372250> Informações**\n\`\`\`Utilize 'Conectar-se' para se conectar em nosso servidor, certifique-se de ter o MTA:SA instalado.\`\`\`\n**<:basededados:1529349519785988166> Nome do servidor:**\n\`\`\`[BR] DETROIT ROLEPLAY | WHITELIST | discord.gg/detroitroleplay\`\`\`\n**<:usuarios:1529346255841660938> Status:**\n\`\`\`🟢 Online\`\`\`\n**<:conexao:1529343828845269223> Conectar - Cole o comando abaixo no F8:**\n\`\`\`connect jogar.detroitroleplay.com\`\`\``)
             .setFooter({ text: 'Status atualizado a cada 2 minutos. Não utilize os botões de copiar.' });
 
         const row = new ActionRowBuilder().addComponents(
