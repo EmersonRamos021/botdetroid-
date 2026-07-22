@@ -77,11 +77,17 @@ async function updateStatusPanel(client) {
         const payload = await buildStatusPayload(client);
         await message.edit(payload);
     } catch (e) {
-        if (e.message.includes('Unknown Message') || e.code === 10008) {
+        const errorMsg = String(e.message || '').toLowerCase();
+        if (errorMsg.includes('unknown message') || e.code === 10008) {
             console.log('⚠️ Mensagem de Status deletada. Removendo configuração...');
-            const { removeSetting } = require('./settings');
-            await removeSetting('statusPanelMessageId');
-            await removeSetting('statusPanelChannelId');
+            try {
+                const { removeSetting } = require('./settings');
+                await removeSetting('statusPanelMessageId');
+                await removeSetting('statusPanelChannelId');
+                console.log('✅ Configuração removida com sucesso!');
+            } catch(err) {
+                console.error('❌ Erro ao tentar remover a configuração antiga:', err);
+            }
         } else {
             console.error('Erro ao atualizar Painel de Status:', e.message);
         }
