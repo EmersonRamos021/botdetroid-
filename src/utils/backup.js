@@ -40,6 +40,8 @@ async function performFullBackup(client) {
         // 1. BACKUP DO BANCO DE DADOS
         // ==========================================
         const dbConfig = parseDbUrl(process.env.DATABASE_URL);
+        dbConfig.ssl = { rejectUnauthorized: false }; // Necessário para bancos como PlanetScale
+        
         await mysqldump({
             connection: dbConfig,
             dumpToFile: dbFile,

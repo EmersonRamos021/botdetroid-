@@ -16,6 +16,8 @@ const anuncioCommand = require('./commands/anuncio');
 const vendasCommand = require('./commands/vendas');
 const idsCommand = require('./commands/ids');
 const conectarCommand = require('./commands/conectar');
+const backupCommand = require('./commands/backup');
+const restaurarServidorCommand = require('./commands/restaurar_servidor');
 
 const commands = [
     setupAtendimento.data.toJSON(),
@@ -32,6 +34,8 @@ const commands = [
     vendasCommand.data.toJSON(),
     idsCommand.data.toJSON(),
     conectarCommand.data.toJSON(),
+    backupCommand.data.toJSON(),
+    restaurarServidorCommand.data.toJSON(),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
