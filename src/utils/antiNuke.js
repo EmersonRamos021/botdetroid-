@@ -4,23 +4,19 @@ const config = require('../config');
 const joinHistory = [];
 const deleteHistory = [];
 
-const RAID_THRESHOLD = 10; // 10 membros
-const RAID_TIMEFRAME = 10000; // 10 segundos
-
-const NUKE_THRESHOLD = 3; // 3 canais/cargos deletados
-const NUKE_TIMEFRAME = 5000; // em 5 segundos
-
 async function handleMemberJoin(member, client) {
     const now = Date.now();
     joinHistory.push({ id: member.id, time: now });
 
+    const RAID_TIMEFRAME = config.antiRaid_time * 1000;
+    
     // Limpar histórico velho
     while (joinHistory.length > 0 && now - joinHistory[0].time > RAID_TIMEFRAME) {
         joinHistory.shift();
     }
 
     // Se detectou Raid
-    if (joinHistory.length >= RAID_THRESHOLD) {
+    if (joinHistory.length >= config.antiRaid_threshold) {
         console.warn('⚠️ [ANTI-RAID] Ataque detectado! Banindo bots invasores...');
         const logChannel = member.guild.channels.cache.get(config.logChannelId);
         
@@ -72,10 +68,10 @@ async function handleDeletionEvent(item, client, type) {
 
         deleteHistory.push({ executorId: executor.id, time: now });
 
-        // Filtrar histórico apenas para esse executor e remover eventos antigos
+        const NUKE_TIMEFRAME = config.antiNuke_time * 1000;
         const recentDeletes = deleteHistory.filter(d => d.executorId === executor.id && (now - d.time) <= NUKE_TIMEFRAME);
 
-        if (recentDeletes.length >= NUKE_THRESHOLD) {
+        if (recentDeletes.length >= config.antiNuke_threshold) {
             console.warn(`🚨 [ANTI-NUKE] Executor ${executor.tag} detectado deletando em massa!`);
             
             // Punição: Remover todos os cargos ou banir

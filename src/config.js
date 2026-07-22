@@ -57,6 +57,18 @@ module.exports = {
     get linkFilterEnabled() {
         return getSetting('linkFilterEnabled') === 'true';
     },
+    get antiRaid_threshold() {
+        return parseInt(getSetting('antiRaid_threshold') || '10', 10);
+    },
+    get antiRaid_time() {
+        return parseInt(getSetting('antiRaid_time') || '10', 10);
+    },
+    get antiNuke_threshold() {
+        return parseInt(getSetting('antiNuke_threshold') || '3', 10);
+    },
+    get antiNuke_time() {
+        return parseInt(getSetting('antiNuke_time') || '5', 10);
+    },
     get memberCounterChannelId() {
         return getSetting('memberCounterChannelId') || null;
     },
